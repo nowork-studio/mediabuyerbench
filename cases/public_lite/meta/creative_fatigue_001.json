@@ -1,0 +1,93 @@
+{
+  "id": "meta_creative_fatigue_001",
+  "title": "Meta CPA doubled from creative fatigue and audience saturation",
+  "provider": "meta_ads",
+  "category": "creative_strategy",
+  "difficulty": "medium",
+  "business": {
+    "vertical": "ecommerce",
+    "product": "single-SKU wellness product",
+    "aov": "$89",
+    "gross_margin": "62%",
+    "target_cac": "$28 purchase"
+  },
+  "user_prompt": "Meta CPA doubled this week. Should we launch new creatives?",
+  "data": [
+    {
+      "name": "Meta campaign performance",
+      "rows": [
+        {"period": "previous 7d", "spend": 2100, "purchases": 82, "cpa": 25.61, "ctr": "1.8%", "cvr": "3.4%", "frequency": 1.9},
+        {"period": "current 7d", "spend": 2300, "purchases": 43, "cpa": 53.49, "ctr": "0.9%", "cvr": "3.2%", "frequency": 5.8}
+      ]
+    },
+    {
+      "name": "Creative delivery",
+      "rows": [
+        {"creative": "UGC demo v3", "age_days": 39, "spend_share": "72%", "current_cpa": 58},
+        {"creative": "Founder story", "age_days": 26, "spend_share": "14%", "current_cpa": 49},
+        {"creative": "Static benefit", "age_days": 31, "spend_share": "14%", "current_cpa": 46}
+      ]
+    },
+    {
+      "name": "Setup notes",
+      "rows": [
+        {"item": "audience", "value": "Interest stack, estimated 450k people"},
+        {"item": "learning", "value": "Ad set is out of learning"},
+        {"item": "landing page", "value": "No material conversion-rate change"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {
+        "id": "creative_fatigue",
+        "label": "Diagnoses creative fatigue",
+        "phrases": ["creative fatigue", "ad fatigue", "fatigue"],
+        "weight": 3,
+        "skills": ["diagnosis", "meta_ads", "creative_strategy"]
+      },
+      {
+        "id": "audience_saturation",
+        "label": "Connects high frequency to audience saturation",
+        "phrases": ["audience saturation", "saturation", "frequency", "small audience"],
+        "weight": 2,
+        "skills": ["meta_ads", "diagnosis"]
+      },
+      {
+        "id": "ctr_down_cvr_stable",
+        "label": "Uses CTR down and CVR stable as evidence",
+        "phrases": ["ctr", "cvr", "conversion rate stayed", "cvr stable", "conversion rate is stable"],
+        "weight": 2,
+        "skills": ["measurement", "creative_strategy"]
+      },
+      {
+        "id": "new_hooks",
+        "label": "Recommends new hooks/angles while keeping control",
+        "phrases": ["new hooks", "new angles", "refresh creative", "keep the control", "maintain control"],
+        "weight": 2,
+        "skills": ["action_plan", "creative_strategy"]
+      },
+      {
+        "id": "dont_rebuild_lp_first",
+        "label": "Does not prioritize landing-page rebuild first",
+        "phrases": ["not landing page", "do not rebuild", "landing page is not", "don't rebuild"],
+        "weight": 1,
+        "skills": ["safety", "business_economics"]
+      }
+    ],
+    "forbidden_concepts": [
+      {
+        "id": "scale_now",
+        "label": "Recommends scaling despite fatigue",
+        "phrases": ["increase spend now", "scale immediately", "raise budget immediately"],
+        "penalty": 30
+      },
+      {
+        "id": "kill_all_ads",
+        "label": "Kills all current ads instead of preserving a control",
+        "phrases": ["turn off all", "pause all ads", "kill all"],
+        "penalty": 25
+      }
+    ]
+  }
+}

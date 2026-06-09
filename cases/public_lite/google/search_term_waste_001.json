@@ -1,0 +1,95 @@
+{
+  "id": "google_search_term_waste_001",
+  "title": "Google Search CPA worsened from irrelevant broad-match queries",
+  "provider": "google_ads",
+  "category": "search_intent",
+  "difficulty": "medium",
+  "business": {
+    "vertical": "local services",
+    "service": "pet boarding and daycare",
+    "market": "Seattle",
+    "target_cpa": "$65 lead",
+    "primary_conversion": "qualified booking request"
+  },
+  "user_prompt": "CPA got worse this week. What should we do?",
+  "data": [
+    {
+      "name": "Campaign performance, last 14 days vs previous 14 days",
+      "rows": [
+        {"period": "previous", "spend": 1180, "clicks": 410, "conversions": 20, "cpa": 59, "ctr": "6.2%"},
+        {"period": "current", "spend": 1420, "clicks": 515, "conversions": 14, "cpa": 101, "ctr": "7.1%"}
+      ]
+    },
+    {
+      "name": "Search terms, current period",
+      "rows": [
+        {"query": "dog boarding near me", "spend": 310, "clicks": 86, "conversions": 7},
+        {"query": "cheap dog kennel seattle", "spend": 205, "clicks": 72, "conversions": 0},
+        {"query": "dog boarding jobs", "spend": 144, "clicks": 61, "conversions": 0},
+        {"query": "free dog sitting", "spend": 96, "clicks": 42, "conversions": 0},
+        {"query": "cat boarding seattle", "spend": 82, "clicks": 28, "conversions": 0}
+      ]
+    },
+    {
+      "name": "Setup notes",
+      "rows": [
+        {"item": "bidding", "value": "Maximize conversions with enough recent conversion signal"},
+        {"item": "keywords", "value": "Broad match expansion added two weeks ago"},
+        {"item": "conversion action", "value": "Booking request form, primary, counted once"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {
+        "id": "broad_match_waste",
+        "label": "Diagnoses irrelevant broad-match search term waste",
+        "phrases": ["broad match", "irrelevant queries", "irrelevant search terms", "query waste", "search term waste"],
+        "weight": 3,
+        "skills": ["diagnosis", "google_ads"]
+      },
+      {
+        "id": "preserve_high_intent",
+        "label": "Preserves high-intent converting queries",
+        "phrases": ["preserve", "do not pause", "keep", "protect", "dog boarding near me"],
+        "weight": 2,
+        "skills": ["search_intent", "safety"]
+      },
+      {
+        "id": "add_negatives",
+        "label": "Recommends negatives for clearly irrelevant themes",
+        "phrases": ["negative keyword", "negatives", "jobs", "free", "cat boarding"],
+        "weight": 2,
+        "skills": ["google_ads", "action_plan"]
+      },
+      {
+        "id": "not_budget_problem",
+        "label": "Does not treat this as a budget increase problem",
+        "phrases": ["not raise budget", "do not increase budget", "budget is not", "not a budget"],
+        "weight": 1.5,
+        "skills": ["business_economics", "safety"]
+      },
+      {
+        "id": "measure_cpa_cvr",
+        "label": "Uses CPA/CVR with denominators rather than CTR alone",
+        "phrases": ["cpa", "cvr", "conversions / clicks", "spend / conversions", "conversion rate"],
+        "weight": 1.5,
+        "skills": ["measurement"]
+      }
+    ],
+    "forbidden_concepts": [
+      {
+        "id": "raise_budget",
+        "label": "Recommends raising budget as primary fix",
+        "phrases": ["raise the budget", "increase budget immediately", "scale budget"],
+        "penalty": 30
+      },
+      {
+        "id": "optimize_ctr",
+        "label": "Optimizes around CTR as the main success metric",
+        "phrases": ["ctr improved so", "optimize for ctr", "focus on ctr"],
+        "penalty": 20
+      }
+    ]
+  }
+}

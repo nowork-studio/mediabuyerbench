@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MediaBuyerBench case",
+  "type": "object",
+  "required": ["id", "title", "provider", "category", "difficulty", "business", "user_prompt", "data", "expected"],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "provider": {"type": "string"},
+    "category": {"type": "string"},
+    "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
+    "business": {"type": "object"},
+    "user_prompt": {"type": "string"},
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "notes": {"type": "string"},
+          "rows": {"type": "array", "items": {"type": "object"}}
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "required": ["required_concepts"],
+      "properties": {
+        "required_concepts": {"type": "array"},
+        "forbidden_concepts": {"type": "array"}
+      }
+    }
+  }
+}
