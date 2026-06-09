@@ -79,6 +79,22 @@ def _find_phrase(text: str, phrases: list[str]) -> str | None:
     return None
 
 
+def _is_negated_match(text: str, phrase: str) -> bool:
+    """Return True when a forbidden phrase is clearly negated nearby.
+
+    This keeps simple deterministic scoring from penalizing answers like
+    "do not kill all old creatives" for the forbidden concept "kill all".
+    """
+    lowered = text.lower()
+    phrase_lower = phrase.lower()
+    start = lowered.find(phrase_lower)
+    if start < 0:
+        return False
+    window = lowered[max(0, start - 40):start]
+    negators = ["do not ", "don't ", "dont ", "not ", "never ", "avoid ", "without "]
+    return any(negator in window for negator in negators)
+
+
 def score_response(case: dict[str, Any], response: str) -> dict[str, Any]:
     expected = case["expected"]
     required = expected.get("required_concepts", [])
@@ -117,7 +133,7 @@ def score_response(case: dict[str, Any], response: str) -> dict[str, Any]:
     penalty = 0.0
     for concept in forbidden:
         phrase = _find_phrase(response, concept.get("phrases", []))
-        if phrase:
+        if phrase and not _is_negated_match(response, phrase):
             concept_penalty = float(concept.get("penalty", 10.0))
             penalty += concept_penalty
             forbidden_hits.append(

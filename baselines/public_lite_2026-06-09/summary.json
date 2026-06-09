@@ -1,0 +1,712 @@
+{
+  "scores": [
+    {
+      "case_id": "cross_channel_platform_cpa_lies_001",
+      "provider": "cross_channel",
+      "category": "budget_allocation",
+      "difficulty": "hard",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "dont_shift_on_platform_cpa",
+          "label": "Rejects budget shift based only on platform CPA",
+          "matched": true,
+          "matched_phrase": "do not move budget",
+          "weight": 3.0,
+          "skills": [
+            "budget_allocation",
+            "safety",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "crm_truth",
+          "label": "Uses CRM SQL/opportunity quality as source of truth",
+          "matched": true,
+          "matched_phrase": "crm",
+          "weight": 3.0,
+          "skills": [
+            "business_economics",
+            "measurement",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "attribution_caveat",
+          "label": "Flags Meta view-through/attribution inflation",
+          "matched": true,
+          "matched_phrase": "view-through",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "meta_ads"
+          ]
+        },
+        {
+          "concept_id": "separate_prospecting_retargeting",
+          "label": "Separates prospecting from retargeting",
+          "matched": true,
+          "matched_phrase": "prospecting",
+          "weight": 1.0,
+          "skills": [
+            "cross_channel",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "compare_pipeline_cac",
+          "label": "Recommends comparing CAC to qualified pipeline/revenue",
+          "matched": true,
+          "matched_phrase": "pipeline",
+          "weight": 1.0,
+          "skills": [
+            "business_economics",
+            "budget_allocation"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "budget_allocation": 100.0,
+        "business_economics": 100.0,
+        "cross_channel": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "gpt-5.5",
+      "response_path": "baselines/public_lite_2026-06-09/responses/gpt-5.5/cross_channel_platform_cpa_lies_001.md"
+    },
+    {
+      "case_id": "google_search_term_waste_001",
+      "provider": "google_ads",
+      "category": "search_intent",
+      "difficulty": "medium",
+      "overall_score": 85.0,
+      "raw_required_score": 85.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "broad_match_waste",
+          "label": "Diagnoses irrelevant broad-match search term waste",
+          "matched": true,
+          "matched_phrase": "broad match",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "google_ads"
+          ]
+        },
+        {
+          "concept_id": "preserve_high_intent",
+          "label": "Preserves high-intent converting queries",
+          "matched": true,
+          "matched_phrase": "preserve",
+          "weight": 2.0,
+          "skills": [
+            "search_intent",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "add_negatives",
+          "label": "Recommends negatives for clearly irrelevant themes",
+          "matched": true,
+          "matched_phrase": "negatives",
+          "weight": 2.0,
+          "skills": [
+            "google_ads",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "not_budget_problem",
+          "label": "Does not treat this as a budget increase problem",
+          "matched": false,
+          "matched_phrase": null,
+          "weight": 1.5,
+          "skills": [
+            "business_economics",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "measure_cpa_cvr",
+          "label": "Uses CPA/CVR with denominators rather than CTR alone",
+          "matched": true,
+          "matched_phrase": "cpa",
+          "weight": 1.5,
+          "skills": [
+            "measurement"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 0.0,
+        "diagnosis": 100.0,
+        "google_ads": 100.0,
+        "measurement": 100.0,
+        "safety": 57.1,
+        "search_intent": 100.0
+      },
+      "model": "gpt-5.5",
+      "response_path": "baselines/public_lite_2026-06-09/responses/gpt-5.5/google_search_term_waste_001.md"
+    },
+    {
+      "case_id": "meta_creative_fatigue_001",
+      "provider": "meta_ads",
+      "category": "creative_strategy",
+      "difficulty": "medium",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "creative_fatigue",
+          "label": "Diagnoses creative fatigue",
+          "matched": true,
+          "matched_phrase": "creative fatigue",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "meta_ads",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "audience_saturation",
+          "label": "Connects high frequency to audience saturation",
+          "matched": true,
+          "matched_phrase": "frequency",
+          "weight": 2.0,
+          "skills": [
+            "meta_ads",
+            "diagnosis"
+          ]
+        },
+        {
+          "concept_id": "ctr_down_cvr_stable",
+          "label": "Uses CTR down and CVR stable as evidence",
+          "matched": true,
+          "matched_phrase": "ctr",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "new_hooks",
+          "label": "Recommends new hooks/angles while keeping control",
+          "matched": true,
+          "matched_phrase": "new hooks",
+          "weight": 2.0,
+          "skills": [
+            "action_plan",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "dont_rebuild_lp_first",
+          "label": "Does not prioritize landing-page rebuild first",
+          "matched": true,
+          "matched_phrase": "do not overhaul",
+          "weight": 1.0,
+          "skills": [
+            "safety",
+            "business_economics"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 100.0,
+        "creative_strategy": 100.0,
+        "diagnosis": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "gpt-5.5",
+      "response_path": "baselines/public_lite_2026-06-09/responses/gpt-5.5/meta_creative_fatigue_001.md"
+    },
+    {
+      "case_id": "cross_channel_platform_cpa_lies_001",
+      "provider": "cross_channel",
+      "category": "budget_allocation",
+      "difficulty": "hard",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "dont_shift_on_platform_cpa",
+          "label": "Rejects budget shift based only on platform CPA",
+          "matched": true,
+          "matched_phrase": "platform cpa",
+          "weight": 3.0,
+          "skills": [
+            "budget_allocation",
+            "safety",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "crm_truth",
+          "label": "Uses CRM SQL/opportunity quality as source of truth",
+          "matched": true,
+          "matched_phrase": "crm",
+          "weight": 3.0,
+          "skills": [
+            "business_economics",
+            "measurement",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "attribution_caveat",
+          "label": "Flags Meta view-through/attribution inflation",
+          "matched": true,
+          "matched_phrase": "view-through",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "meta_ads"
+          ]
+        },
+        {
+          "concept_id": "separate_prospecting_retargeting",
+          "label": "Separates prospecting from retargeting",
+          "matched": true,
+          "matched_phrase": "prospecting",
+          "weight": 1.0,
+          "skills": [
+            "cross_channel",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "compare_pipeline_cac",
+          "label": "Recommends comparing CAC to qualified pipeline/revenue",
+          "matched": true,
+          "matched_phrase": "pipeline",
+          "weight": 1.0,
+          "skills": [
+            "business_economics",
+            "budget_allocation"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "budget_allocation": 100.0,
+        "business_economics": 100.0,
+        "cross_channel": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "claude-sonnet",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-sonnet/cross_channel_platform_cpa_lies_001.md"
+    },
+    {
+      "case_id": "google_search_term_waste_001",
+      "provider": "google_ads",
+      "category": "search_intent",
+      "difficulty": "medium",
+      "overall_score": 85.0,
+      "raw_required_score": 85.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "broad_match_waste",
+          "label": "Diagnoses irrelevant broad-match search term waste",
+          "matched": true,
+          "matched_phrase": "broad match",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "google_ads"
+          ]
+        },
+        {
+          "concept_id": "preserve_high_intent",
+          "label": "Preserves high-intent converting queries",
+          "matched": true,
+          "matched_phrase": "dog boarding near me",
+          "weight": 2.0,
+          "skills": [
+            "search_intent",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "add_negatives",
+          "label": "Recommends negatives for clearly irrelevant themes",
+          "matched": true,
+          "matched_phrase": "negative keyword",
+          "weight": 2.0,
+          "skills": [
+            "google_ads",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "not_budget_problem",
+          "label": "Does not treat this as a budget increase problem",
+          "matched": false,
+          "matched_phrase": null,
+          "weight": 1.5,
+          "skills": [
+            "business_economics",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "measure_cpa_cvr",
+          "label": "Uses CPA/CVR with denominators rather than CTR alone",
+          "matched": true,
+          "matched_phrase": "cpa",
+          "weight": 1.5,
+          "skills": [
+            "measurement"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 0.0,
+        "diagnosis": 100.0,
+        "google_ads": 100.0,
+        "measurement": 100.0,
+        "safety": 57.1,
+        "search_intent": 100.0
+      },
+      "model": "claude-sonnet",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-sonnet/google_search_term_waste_001.md"
+    },
+    {
+      "case_id": "meta_creative_fatigue_001",
+      "provider": "meta_ads",
+      "category": "creative_strategy",
+      "difficulty": "medium",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "creative_fatigue",
+          "label": "Diagnoses creative fatigue",
+          "matched": true,
+          "matched_phrase": "creative fatigue",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "meta_ads",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "audience_saturation",
+          "label": "Connects high frequency to audience saturation",
+          "matched": true,
+          "matched_phrase": "audience saturation",
+          "weight": 2.0,
+          "skills": [
+            "meta_ads",
+            "diagnosis"
+          ]
+        },
+        {
+          "concept_id": "ctr_down_cvr_stable",
+          "label": "Uses CTR down and CVR stable as evidence",
+          "matched": true,
+          "matched_phrase": "ctr",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "new_hooks",
+          "label": "Recommends new hooks/angles while keeping control",
+          "matched": true,
+          "matched_phrase": "new angles",
+          "weight": 2.0,
+          "skills": [
+            "action_plan",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "dont_rebuild_lp_first",
+          "label": "Does not prioritize landing-page rebuild first",
+          "matched": true,
+          "matched_phrase": "landing page is exonerated",
+          "weight": 1.0,
+          "skills": [
+            "safety",
+            "business_economics"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 100.0,
+        "creative_strategy": 100.0,
+        "diagnosis": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "claude-sonnet",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-sonnet/meta_creative_fatigue_001.md"
+    },
+    {
+      "case_id": "cross_channel_platform_cpa_lies_001",
+      "provider": "cross_channel",
+      "category": "budget_allocation",
+      "difficulty": "hard",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "dont_shift_on_platform_cpa",
+          "label": "Rejects budget shift based only on platform CPA",
+          "matched": true,
+          "matched_phrase": "platform cpa",
+          "weight": 3.0,
+          "skills": [
+            "budget_allocation",
+            "safety",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "crm_truth",
+          "label": "Uses CRM SQL/opportunity quality as source of truth",
+          "matched": true,
+          "matched_phrase": "crm",
+          "weight": 3.0,
+          "skills": [
+            "business_economics",
+            "measurement",
+            "cross_channel"
+          ]
+        },
+        {
+          "concept_id": "attribution_caveat",
+          "label": "Flags Meta view-through/attribution inflation",
+          "matched": true,
+          "matched_phrase": "view-through",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "meta_ads"
+          ]
+        },
+        {
+          "concept_id": "separate_prospecting_retargeting",
+          "label": "Separates prospecting from retargeting",
+          "matched": true,
+          "matched_phrase": "prospecting",
+          "weight": 1.0,
+          "skills": [
+            "cross_channel",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "compare_pipeline_cac",
+          "label": "Recommends comparing CAC to qualified pipeline/revenue",
+          "matched": true,
+          "matched_phrase": "pipeline",
+          "weight": 1.0,
+          "skills": [
+            "business_economics",
+            "budget_allocation"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "budget_allocation": 100.0,
+        "business_economics": 100.0,
+        "cross_channel": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "claude-opus",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-opus/cross_channel_platform_cpa_lies_001.md"
+    },
+    {
+      "case_id": "google_search_term_waste_001",
+      "provider": "google_ads",
+      "category": "search_intent",
+      "difficulty": "medium",
+      "overall_score": 85.0,
+      "raw_required_score": 85.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "broad_match_waste",
+          "label": "Diagnoses irrelevant broad-match search term waste",
+          "matched": true,
+          "matched_phrase": "broad match",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "google_ads"
+          ]
+        },
+        {
+          "concept_id": "preserve_high_intent",
+          "label": "Preserves high-intent converting queries",
+          "matched": true,
+          "matched_phrase": "keep",
+          "weight": 2.0,
+          "skills": [
+            "search_intent",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "add_negatives",
+          "label": "Recommends negatives for clearly irrelevant themes",
+          "matched": true,
+          "matched_phrase": "negative keyword",
+          "weight": 2.0,
+          "skills": [
+            "google_ads",
+            "action_plan"
+          ]
+        },
+        {
+          "concept_id": "not_budget_problem",
+          "label": "Does not treat this as a budget increase problem",
+          "matched": false,
+          "matched_phrase": null,
+          "weight": 1.5,
+          "skills": [
+            "business_economics",
+            "safety"
+          ]
+        },
+        {
+          "concept_id": "measure_cpa_cvr",
+          "label": "Uses CPA/CVR with denominators rather than CTR alone",
+          "matched": true,
+          "matched_phrase": "cpa",
+          "weight": 1.5,
+          "skills": [
+            "measurement"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 0.0,
+        "diagnosis": 100.0,
+        "google_ads": 100.0,
+        "measurement": 100.0,
+        "safety": 57.1,
+        "search_intent": 100.0
+      },
+      "model": "claude-opus",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-opus/google_search_term_waste_001.md"
+    },
+    {
+      "case_id": "meta_creative_fatigue_001",
+      "provider": "meta_ads",
+      "category": "creative_strategy",
+      "difficulty": "medium",
+      "overall_score": 100.0,
+      "raw_required_score": 100.0,
+      "penalty": 0.0,
+      "required": [
+        {
+          "concept_id": "creative_fatigue",
+          "label": "Diagnoses creative fatigue",
+          "matched": true,
+          "matched_phrase": "creative fatigue",
+          "weight": 3.0,
+          "skills": [
+            "diagnosis",
+            "meta_ads",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "audience_saturation",
+          "label": "Connects high frequency to audience saturation",
+          "matched": true,
+          "matched_phrase": "audience saturation",
+          "weight": 2.0,
+          "skills": [
+            "meta_ads",
+            "diagnosis"
+          ]
+        },
+        {
+          "concept_id": "ctr_down_cvr_stable",
+          "label": "Uses CTR down and CVR stable as evidence",
+          "matched": true,
+          "matched_phrase": "ctr",
+          "weight": 2.0,
+          "skills": [
+            "measurement",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "new_hooks",
+          "label": "Recommends new hooks/angles while keeping control",
+          "matched": true,
+          "matched_phrase": "different angles",
+          "weight": 2.0,
+          "skills": [
+            "action_plan",
+            "creative_strategy"
+          ]
+        },
+        {
+          "concept_id": "dont_rebuild_lp_first",
+          "label": "Does not prioritize landing-page rebuild first",
+          "matched": true,
+          "matched_phrase": "don't touch the landing page",
+          "weight": 1.0,
+          "skills": [
+            "safety",
+            "business_economics"
+          ]
+        }
+      ],
+      "forbidden_hits": [],
+      "skill_scores": {
+        "action_plan": 100.0,
+        "business_economics": 100.0,
+        "creative_strategy": 100.0,
+        "diagnosis": 100.0,
+        "measurement": 100.0,
+        "meta_ads": 100.0,
+        "safety": 100.0
+      },
+      "model": "claude-opus",
+      "response_path": "baselines/public_lite_2026-06-09/responses/claude-opus/meta_creative_fatigue_001.md"
+    }
+  ]
+}

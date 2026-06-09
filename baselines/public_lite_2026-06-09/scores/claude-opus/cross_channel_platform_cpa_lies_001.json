@@ -1,0 +1,80 @@
+{
+  "case_id": "cross_channel_platform_cpa_lies_001",
+  "provider": "cross_channel",
+  "category": "budget_allocation",
+  "difficulty": "hard",
+  "overall_score": 100.0,
+  "raw_required_score": 100.0,
+  "penalty": 0.0,
+  "required": [
+    {
+      "concept_id": "dont_shift_on_platform_cpa",
+      "label": "Rejects budget shift based only on platform CPA",
+      "matched": true,
+      "matched_phrase": "platform cpa",
+      "weight": 3.0,
+      "skills": [
+        "budget_allocation",
+        "safety",
+        "cross_channel"
+      ]
+    },
+    {
+      "concept_id": "crm_truth",
+      "label": "Uses CRM SQL/opportunity quality as source of truth",
+      "matched": true,
+      "matched_phrase": "crm",
+      "weight": 3.0,
+      "skills": [
+        "business_economics",
+        "measurement",
+        "cross_channel"
+      ]
+    },
+    {
+      "concept_id": "attribution_caveat",
+      "label": "Flags Meta view-through/attribution inflation",
+      "matched": true,
+      "matched_phrase": "view-through",
+      "weight": 2.0,
+      "skills": [
+        "measurement",
+        "meta_ads"
+      ]
+    },
+    {
+      "concept_id": "separate_prospecting_retargeting",
+      "label": "Separates prospecting from retargeting",
+      "matched": true,
+      "matched_phrase": "prospecting",
+      "weight": 1.0,
+      "skills": [
+        "cross_channel",
+        "action_plan"
+      ]
+    },
+    {
+      "concept_id": "compare_pipeline_cac",
+      "label": "Recommends comparing CAC to qualified pipeline/revenue",
+      "matched": true,
+      "matched_phrase": "pipeline",
+      "weight": 1.0,
+      "skills": [
+        "business_economics",
+        "budget_allocation"
+      ]
+    }
+  ],
+  "forbidden_hits": [],
+  "skill_scores": {
+    "action_plan": 100.0,
+    "budget_allocation": 100.0,
+    "business_economics": 100.0,
+    "cross_channel": 100.0,
+    "measurement": 100.0,
+    "meta_ads": 100.0,
+    "safety": 100.0
+  },
+  "model": "claude-opus",
+  "response_path": "baselines/public_lite_2026-06-09/responses/claude-opus/cross_channel_platform_cpa_lies_001.md"
+}

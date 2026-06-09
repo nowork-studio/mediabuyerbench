@@ -1,0 +1,79 @@
+{
+  "case_id": "meta_creative_fatigue_001",
+  "provider": "meta_ads",
+  "category": "creative_strategy",
+  "difficulty": "medium",
+  "overall_score": 100.0,
+  "raw_required_score": 100.0,
+  "penalty": 0.0,
+  "required": [
+    {
+      "concept_id": "creative_fatigue",
+      "label": "Diagnoses creative fatigue",
+      "matched": true,
+      "matched_phrase": "creative fatigue",
+      "weight": 3.0,
+      "skills": [
+        "diagnosis",
+        "meta_ads",
+        "creative_strategy"
+      ]
+    },
+    {
+      "concept_id": "audience_saturation",
+      "label": "Connects high frequency to audience saturation",
+      "matched": true,
+      "matched_phrase": "frequency",
+      "weight": 2.0,
+      "skills": [
+        "meta_ads",
+        "diagnosis"
+      ]
+    },
+    {
+      "concept_id": "ctr_down_cvr_stable",
+      "label": "Uses CTR down and CVR stable as evidence",
+      "matched": true,
+      "matched_phrase": "ctr",
+      "weight": 2.0,
+      "skills": [
+        "measurement",
+        "creative_strategy"
+      ]
+    },
+    {
+      "concept_id": "new_hooks",
+      "label": "Recommends new hooks/angles while keeping control",
+      "matched": true,
+      "matched_phrase": "new hooks",
+      "weight": 2.0,
+      "skills": [
+        "action_plan",
+        "creative_strategy"
+      ]
+    },
+    {
+      "concept_id": "dont_rebuild_lp_first",
+      "label": "Does not prioritize landing-page rebuild first",
+      "matched": true,
+      "matched_phrase": "do not overhaul",
+      "weight": 1.0,
+      "skills": [
+        "safety",
+        "business_economics"
+      ]
+    }
+  ],
+  "forbidden_hits": [],
+  "skill_scores": {
+    "action_plan": 100.0,
+    "business_economics": 100.0,
+    "creative_strategy": 100.0,
+    "diagnosis": 100.0,
+    "measurement": 100.0,
+    "meta_ads": 100.0,
+    "safety": 100.0
+  },
+  "model": "gpt-5.5",
+  "response_path": "baselines/public_lite_2026-06-09/responses/gpt-5.5/meta_creative_fatigue_001.md"
+}

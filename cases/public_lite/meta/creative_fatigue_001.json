@@ -63,14 +63,14 @@
       {
         "id": "new_hooks",
         "label": "Recommends new hooks/angles while keeping control",
-        "phrases": ["new hooks", "new angles", "refresh creative", "keep the control", "maintain control"],
+        "phrases": ["new hooks", "new angles", "different angles", "refresh creative", "keep the control", "maintain control", "keep the best existing ads"],
         "weight": 2,
         "skills": ["action_plan", "creative_strategy"]
       },
       {
         "id": "dont_rebuild_lp_first",
         "label": "Does not prioritize landing-page rebuild first",
-        "phrases": ["not landing page", "do not rebuild", "landing page is not", "don't rebuild"],
+        "phrases": ["not landing page", "do not rebuild", "do not overhaul", "don't touch the landing page", "landing page is not", "landing page is exonerated", "lp are fine", "offer and lp are fine", "don't rebuild", "not a full rebuild"],
         "weight": 1,
         "skills": ["safety", "business_economics"]
       }

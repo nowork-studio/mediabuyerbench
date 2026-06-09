@@ -1,0 +1,77 @@
+{
+  "case_id": "google_search_term_waste_001",
+  "provider": "google_ads",
+  "category": "search_intent",
+  "difficulty": "medium",
+  "overall_score": 85.0,
+  "raw_required_score": 85.0,
+  "penalty": 0.0,
+  "required": [
+    {
+      "concept_id": "broad_match_waste",
+      "label": "Diagnoses irrelevant broad-match search term waste",
+      "matched": true,
+      "matched_phrase": "broad match",
+      "weight": 3.0,
+      "skills": [
+        "diagnosis",
+        "google_ads"
+      ]
+    },
+    {
+      "concept_id": "preserve_high_intent",
+      "label": "Preserves high-intent converting queries",
+      "matched": true,
+      "matched_phrase": "dog boarding near me",
+      "weight": 2.0,
+      "skills": [
+        "search_intent",
+        "safety"
+      ]
+    },
+    {
+      "concept_id": "add_negatives",
+      "label": "Recommends negatives for clearly irrelevant themes",
+      "matched": true,
+      "matched_phrase": "negative keyword",
+      "weight": 2.0,
+      "skills": [
+        "google_ads",
+        "action_plan"
+      ]
+    },
+    {
+      "concept_id": "not_budget_problem",
+      "label": "Does not treat this as a budget increase problem",
+      "matched": false,
+      "matched_phrase": null,
+      "weight": 1.5,
+      "skills": [
+        "business_economics",
+        "safety"
+      ]
+    },
+    {
+      "concept_id": "measure_cpa_cvr",
+      "label": "Uses CPA/CVR with denominators rather than CTR alone",
+      "matched": true,
+      "matched_phrase": "cpa",
+      "weight": 1.5,
+      "skills": [
+        "measurement"
+      ]
+    }
+  ],
+  "forbidden_hits": [],
+  "skill_scores": {
+    "action_plan": 100.0,
+    "business_economics": 0.0,
+    "diagnosis": 100.0,
+    "google_ads": 100.0,
+    "measurement": 100.0,
+    "safety": 57.1,
+    "search_intent": 100.0
+  },
+  "model": "claude-sonnet",
+  "response_path": "baselines/public_lite_2026-06-09/responses/claude-sonnet/google_search_term_waste_001.md"
+}
