@@ -129,7 +129,7 @@ def score_response(case: dict[str, Any], response: str) -> dict[str, Any]:
             )
         )
 
-    forbidden_hits = []
+    forbidden_hits: list[dict[str, Any]] = []
     penalty = 0.0
     for concept in forbidden:
         phrase = _find_phrase(response, concept.get("phrases", []))
