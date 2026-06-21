@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterator
 from pathlib import Path
 
 from mediabuyerbench.evaluator import load_case, render_prompt, score_response, summarize_score
@@ -9,7 +10,7 @@ from mediabuyerbench.evaluator import load_case, render_prompt, score_response, 
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def iter_cases(split: str = "public_lite"):
+def iter_cases(split: str = "public_lite") -> Iterator[Path]:
     case_root = ROOT / "cases" / split
     yield from sorted(case_root.rglob("*.json"))
 
