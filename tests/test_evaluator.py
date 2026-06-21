@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from mediabuyerbench.evaluator import load_case, render_prompt, score_response
+from mediabuyerbench.evaluator import load_case, render_prompt, score_response, validate_case
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,6 +33,45 @@ class EvaluatorTest(unittest.TestCase):
         response = "Creative fatigue is the issue. Do not kill all old creatives; keep the control while testing new hooks. Do not overhaul the landing page. CTR fell while CVR is stable and frequency rose."
         score = score_response(load_case(case_path), response)
         self.assertEqual(score["forbidden_hits"], [])
+
+
+class ValidateCaseTest(unittest.TestCase):
+    def _valid_case(self):
+        return {
+            "id": "c1",
+            "title": "t",
+            "provider": "google_ads",
+            "category": "search",
+            "difficulty": "easy",
+            "business": {},
+            "user_prompt": "p",
+            "data": [],
+            "expected": {"required_concepts": [{"id": "a", "phrases": ["x"]}]},
+        }
+
+    def test_valid_case_passes(self):
+        validate_case(self._valid_case())  # should not raise
+
+    def test_missing_top_level_field_raises(self):
+        case = self._valid_case()
+        del case["provider"]
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("provider", str(ctx.exception))
+
+    def test_missing_required_concepts_raises(self):
+        case = self._valid_case()
+        case["expected"] = {}
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("required_concepts", str(ctx.exception))
+
+    def test_empty_required_concepts_raises(self):
+        case = self._valid_case()
+        case["expected"]["required_concepts"] = []
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("at least one required concept", str(ctx.exception))
 
 
 if __name__ == "__main__":
