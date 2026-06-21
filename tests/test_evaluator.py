@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from mediabuyerbench.evaluator import load_case, render_prompt, score_response
+from mediabuyerbench.evaluator import _is_negated_match, load_case, render_prompt, score_response
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,6 +33,25 @@ class EvaluatorTest(unittest.TestCase):
         response = "Creative fatigue is the issue. Do not kill all old creatives; keep the control while testing new hooks. Do not overhaul the landing page. CTR fell while CVR is stable and frequency rose."
         score = score_response(load_case(case_path), response)
         self.assertEqual(score["forbidden_hits"], [])
+
+
+class NegatedMatchTest(unittest.TestCase):
+    def test_negator_immediately_before_phrase_is_negated(self):
+        self.assertTrue(_is_negated_match("do not kill all old creatives", "kill all"))
+
+    def test_no_negator_is_not_negated(self):
+        self.assertFalse(_is_negated_match("kill all old creatives", "kill all"))
+
+    def test_negator_inside_window_is_negated(self):
+        self.assertTrue(_is_negated_match("never kill all", "kill all"))
+
+    def test_negator_beyond_window_is_not_negated(self):
+        # The negator sits far enough before the phrase to fall outside the
+        # 40-character lookbehind window, so it must not suppress the match.
+        self.assertFalse(_is_negated_match("never" + " " * 50 + "kill all", "kill all"))
+
+    def test_absent_phrase_is_not_negated(self):
+        self.assertFalse(_is_negated_match("great campaign here", "kill all"))
 
 
 if __name__ == "__main__":
