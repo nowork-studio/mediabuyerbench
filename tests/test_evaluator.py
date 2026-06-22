@@ -135,5 +135,30 @@ class SummarizeScoreTest(unittest.TestCase):
         self.assertIn("Case: cross_channel_platform_cpa_lies_001", summary)
 
 
+class RenderPromptTableTest(unittest.TestCase):
+    def test_data_table_renders_with_ragged_rows_and_numeric_cells(self):
+        case = {
+            "title": "T",
+            "business": {"goal": "leads"},
+            "user_prompt": "diagnose",
+            "data": [
+                {
+                    "name": "Spend",
+                    "notes": "last 7 days",
+                    "rows": [
+                        {"campaign": "A", "cost": 100},  # numeric value is coerced to str
+                        {"campaign": "B"},               # ragged row: missing 'cost'
+                    ],
+                }
+            ],
+        }
+        out = render_prompt(case)
+        self.assertIn("last 7 days", out)          # block notes rendered
+        self.assertIn("campaign | cost", out)      # header row from first row's keys
+        self.assertIn("--- | ---", out)            # markdown separator
+        self.assertIn("A | 100", out)              # non-string cell coerced
+        self.assertIn("B | ", out)                 # missing key renders as empty cell, no crash
+
+
 if __name__ == "__main__":
     unittest.main()
