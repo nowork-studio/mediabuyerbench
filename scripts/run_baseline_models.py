@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -40,7 +41,7 @@ MODELS = [
 PREFIX = """You are being evaluated by MediaBuyerBench. Answer only the benchmark prompt. Do not use tools. Be concise but specific.\n\n"""
 
 
-def run_command(model, prompt: str, output_path: Path) -> tuple[str, str]:
+def run_command(model: dict[str, Any], prompt: str, output_path: Path) -> tuple[str, str]:
     cmd = model["cmd"](prompt, output_path)
     if model["runner"] == "codex":
         proc = subprocess.run(cmd, input=prompt, text=True, capture_output=True, timeout=300, cwd=ROOT)
