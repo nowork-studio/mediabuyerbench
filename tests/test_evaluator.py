@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from mediabuyerbench.evaluator import load_case, render_prompt, score_response
+from mediabuyerbench.evaluator import load_case, render_prompt, score_response, validate_case
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -47,6 +47,45 @@ class EvaluatorTest(unittest.TestCase):
         }
         score = score_response(case, "no matching phrase here")
         self.assertEqual(score["skill_scores"], {"diagnosis": 0.0})
+
+
+class ValidateCaseTest(unittest.TestCase):
+    def _valid_case(self):
+        return {
+            "id": "c1",
+            "title": "t",
+            "provider": "google_ads",
+            "category": "search",
+            "difficulty": "easy",
+            "business": {},
+            "user_prompt": "p",
+            "data": [],
+            "expected": {"required_concepts": [{"id": "a", "phrases": ["x"]}]},
+        }
+
+    def test_valid_case_passes(self):
+        validate_case(self._valid_case())  # should not raise
+
+    def test_missing_top_level_field_raises(self):
+        case = self._valid_case()
+        del case["provider"]
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("provider", str(ctx.exception))
+
+    def test_missing_required_concepts_raises(self):
+        case = self._valid_case()
+        case["expected"] = {}
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("required_concepts", str(ctx.exception))
+
+    def test_empty_required_concepts_raises(self):
+        case = self._valid_case()
+        case["expected"]["required_concepts"] = []
+        with self.assertRaises(ValueError) as ctx:
+            validate_case(case)
+        self.assertIn("at least one required concept", str(ctx.exception))
 
 
 if __name__ == "__main__":
