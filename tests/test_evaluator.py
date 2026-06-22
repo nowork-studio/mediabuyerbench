@@ -17,7 +17,7 @@ class EvaluatorTest(unittest.TestCase):
     def test_good_sample_scores_high(self):
         case_path = ROOT / "cases" / "public_lite" / "google" / "search_term_waste_001.json"
         response_path = ROOT / "examples" / "responses" / "google_search_term_waste_001.md"
-        score = score_response(load_case(case_path), response_path.read_text())
+        score = score_response(load_case(case_path), response_path.read_text(encoding="utf-8"))
         self.assertGreaterEqual(score["overall_score"], 80)
         self.assertEqual(score["forbidden_hits"], [])
 
