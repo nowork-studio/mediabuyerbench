@@ -4,6 +4,7 @@ import argparse
 import json
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from mediabuyerbench.evaluator import load_case, render_prompt, score_response, summarize_score
 
@@ -42,7 +43,7 @@ def cmd_score(args: argparse.Namespace) -> int:
 
 def cmd_run_samples(args: argparse.Namespace) -> int:
     sample_dir = ROOT / "examples" / "responses"
-    pairs = []
+    pairs: list[tuple[Path, Path]] = []
     for case_path in iter_cases("public_lite"):
         case = load_case(case_path)
         sample_path = sample_dir / f"{case['id']}.md"
@@ -52,7 +53,7 @@ def cmd_run_samples(args: argparse.Namespace) -> int:
     if not pairs:
         raise SystemExit("No sample responses found")
 
-    scores = []
+    scores: list[dict[str, Any]] = []
     for case_path, sample_path in pairs:
         case = load_case(case_path)
         response = sample_path.read_text(encoding="utf-8")
