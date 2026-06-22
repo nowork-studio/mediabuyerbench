@@ -57,7 +57,7 @@ Score a response file:
 ```bash
 mediabuyerbench score \
   --case cases/public_lite/google/search_term_waste_001.json \
-  --response examples/responses/google_search_term_waste_good.md
+  --response examples/responses/google_search_term_waste_001.md
 ```
 
 Run all sample responses:
