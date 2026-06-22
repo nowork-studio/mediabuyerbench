@@ -148,7 +148,7 @@ def score_response(case: dict[str, Any], response: str) -> dict[str, Any]:
     raw_score = 100.0 * earned_weight / total_weight if total_weight else 0.0
     overall = max(0.0, min(100.0, raw_score - penalty))
     skill_scores = {
-        skill: round(100.0 * skill_earned.get(skill, 0.0) / total, 1)
+        skill: round(100.0 * skill_earned.get(skill, 0.0) / total, 1) if total else 0.0
         for skill, total in sorted(skill_totals.items())
     }
 

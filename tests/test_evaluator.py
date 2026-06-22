@@ -33,6 +33,20 @@ class EvaluatorTest(unittest.TestCase):
         response = "Creative fatigue is the issue. Do not kill all old creatives; keep the control while testing new hooks. Do not overhaul the landing page. CTR fell while CVR is stable and frequency rose."
         score = score_response(load_case(case_path), response)
         self.assertEqual(score["forbidden_hits"], [])
+    def test_zero_weight_concept_does_not_crash_skill_scores(self):
+        case = {
+            "id": "zero_weight",
+            "provider": "test",
+            "category": "test",
+            "difficulty": "easy",
+            "expected": {
+                "required_concepts": [
+                    {"id": "a", "weight": 0, "skills": ["diagnosis"], "phrases": ["foo"]}
+                ]
+            },
+        }
+        score = score_response(case, "no matching phrase here")
+        self.assertEqual(score["skill_scores"], {"diagnosis": 0.0})
 
 
 if __name__ == "__main__":
