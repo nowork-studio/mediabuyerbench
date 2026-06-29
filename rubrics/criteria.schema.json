@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MediaBuyerBench criteria library",
+  "type": "object",
+  "required": ["version", "criteria"],
+  "properties": {
+    "version": {"type": "string"},
+    "updated": {"type": "string"},
+    "description": {"type": "string"},
+    "type_legend": {"type": "object"},
+    "authority_legend": {"type": "object"},
+    "principles": {"type": "array", "items": {"type": "string"}},
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "provider", "category", "title", "type", "authority", "condition", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+\\.[a-z0-9_]+$"},
+          "provider": {"type": "string", "enum": ["google_ads", "meta_ads", "x_ads", "cross_channel"]},
+          "category": {"type": "string"},
+          "title": {"type": "string"},
+          "type": {"type": "string", "enum": ["programmatic", "judge", "hybrid"]},
+          "authority": {"type": "string", "enum": ["official", "expert", "convention"]},
+          "condition": {"type": "string"},
+          "default_threshold": {"type": ["object", "null"]},
+          "window_days": {"type": ["integer", "null"]},
+          "tunable": {"type": "boolean"},
+          "notes": {"type": "string"},
+          "caution": {"type": "string"},
+          "judge_guidance": {"type": "string"},
+          "source": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": {"type": "string"},
+              "url": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}
