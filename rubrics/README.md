@@ -86,7 +86,7 @@ carry a `rubric` array that references criteria by `id`:
       "expected": "flag",
       "weight": 3,
       "skills": ["diagnosis", "google_ads"],
-      "threshold_override": {"clicks_min": 25},
+      "note": "clicks floor lowered to 25 (library default 150) for this small case",
       "data_check": {
         "block": "Search terms, current period",
         "where": {"conversions": {"==": 0}, "clicks": {">=": 25}},
@@ -101,28 +101,36 @@ carry a `rubric` array that references criteria by `id`:
 - `criterion` — the library `id` (provenance, type, authority, source).
 - `expected` — what a correct answer does: `flag` / `act` / `respect`
   (positive) or `avoid` (guardrail; violation triggers `penalty`).
-- `weight` / `skills` — fold into a 0-100 rubric score + per-skill breakdown,
-  mirroring the concept scorer.
-- `threshold_override` — per-case tweak to the criterion's `default_threshold`.
-  Case data is small, so click/spend floors usually need lowering.
+- `weight` / `skills` — fold into a 0-100 rubric score + per-skill breakdown.
+- `note` — free-text rationale (e.g. why a threshold was tuned for this case).
+  The `data_check` below is the authoritative threshold for scoring; the
+  library `default_threshold` is reference metadata, not auto-applied.
 - `data_check` — derives the **ground truth** from the case's own `data`: it
   selects the `select` field from every row in the named `block` matching all
-  `where` conditions (operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `in`).
-  For the example above this returns the actually-wasteful search terms.
-- `detect` — phrases that drive the headline score (same deterministic
-  semantics as the concept scorer). When `detect` is omitted, scoring falls
-  back to coverage of the `data_check` findings.
+  `where` conditions. Operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `in` (list
+  membership), `contains` (field contains substring). A misconfigured `block`
+  or field **raises** — it never silently returns "nothing found".
+- `detect` — phrases for the diagnosis signal.
 
 How scoring works (`mediabuyerbench/rubric.py`):
 
 - **Ground truth** is computed from `data_check` — there is no outcome data, so
   correctness comes from how the case was constructed.
-- **Headline score** is detect-phrase driven (so an abbreviated-but-correct
-  answer is not punished), reported per item with full source traceability.
-- **Completeness** is reported as `findings_covered / findings` — e.g. did the
-  answer enumerate every wasteful term, or only address the theme?
-- `judge`/`hybrid` items currently score deterministically via `detect`; they
-  are tagged so a future LLM-judge can take them over without changing cases.
+- **Positive items** earn, per item: half from `coverage` (fraction of the
+  data-derived findings the response references) and half from the `detect`
+  diagnosis. So the `data_check` is a real scoring input, not decoration. If an
+  item has only `data_check` it scores on coverage alone; only `detect`, on the
+  phrase alone.
+- **Guardrail (`avoid`) items** apply `penalty` if **any** forbidden phrase
+  appears non-negated (every phrase is checked, not just the first).
+- `judge`/`hybrid` items currently score deterministically; they are tagged so a
+  pinned LLM judge can take them over later without changing cases.
+
+> **Honest limitation.** `detect`/`coverage` are substring matches: a
+> transparent but **gameable** proxy. A response crafted to echo the right
+> tokens can score well without real reasoning. Treat `rubric_score` as an
+> inspectable signal, not an un-gameable ground truth — robustness for the
+> subjective items is the job of the (future) pinned LLM judge.
 
 ## Important: read these caveats before scoring with this
 

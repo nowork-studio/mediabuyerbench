@@ -20,10 +20,12 @@ The first scorer is deterministic concept matching. It is intentionally limited 
 `rubrics/criteria_library.json` is a source-backed catalog of audit criteria
 (threshold, machine-checkability, source authority). Cases attach criteria via
 `expected.rubric`, and `mediabuyerbench/rubric.py` scores them deterministically:
-ground truth is derived from each case's own `data` via `data_check`, headline
-score is detect-phrase driven, and completeness (findings covered) is reported.
-`judge`/`hybrid` criteria are tagged so an LLM judge can take them over later
-without changing cases. See `rubrics/README.md`.
+ground truth is derived from each case's own `data` via `data_check`, and each
+positive item earns half from coverage of those findings and half from the
+`detect` diagnosis (so the data check is a real input, not decoration).
+Guardrail items penalize any non-negated forbidden phrase. The matching is
+substring-based — transparent but gameable — so `judge`/`hybrid` criteria are
+tagged for a pinned LLM judge to take over later. See `rubrics/README.md`.
 
 Future versions should add:
 

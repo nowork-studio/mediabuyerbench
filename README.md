@@ -102,6 +102,9 @@ docs, Optmyzr, etc.). Each criterion records its threshold, machine-checkability
 (`programmatic`/`judge`/`hybrid`), and source authority (`official`/`expert`/
 `convention`). A `data_check` derives ground truth from the case's own data, so
 correctness comes from how the case was built rather than from outcome data.
+Scoring is deterministic substring matching — a transparent but gameable proxy;
+robust grading of the `judge`/`hybrid` items is the role of the planned LLM
+judge, not this layer.
 
 ```bash
 mediabuyerbench score \

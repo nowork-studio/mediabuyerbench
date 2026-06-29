@@ -40,7 +40,7 @@
               "weight": {"type": "number"},
               "penalty": {"type": "number"},
               "skills": {"type": "array", "items": {"type": "string"}},
-              "threshold_override": {"type": "object"},
+              "note": {"type": "string"},
               "detect": {"type": "array", "items": {"type": "string"}},
               "data_check": {
                 "type": "object",

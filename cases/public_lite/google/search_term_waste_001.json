@@ -97,7 +97,7 @@
         "expected": "flag",
         "weight": 3,
         "skills": ["diagnosis", "google_ads"],
-        "threshold_override": {"clicks_min": 25},
+        "note": "clicks floor lowered to 25 (library default is 150) to fit this small synthetic case; the data_check below is the authoritative threshold for scoring.",
         "data_check": {
           "block": "Search terms, current period",
           "where": {"conversions": {"==": 0}, "clicks": {">=": 25}},
