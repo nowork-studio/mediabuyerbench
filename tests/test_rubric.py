@@ -132,6 +132,45 @@ class ScoreResponseRubricTest(unittest.TestCase):
         self.assertIn("source:", summary)
 
 
+class MultiCaseRubricTest(unittest.TestCase):
+    def _score(self, case_rel, response_id):
+        case = load_case(ROOT / "cases" / "public_lite" / case_rel)
+        resp = (ROOT / "examples" / "responses" / f"{response_id}.md").read_text(encoding="utf-8")
+        return score_response_rubric(case, resp)
+
+    def test_meta_reference_scores_well(self):
+        result = self._score("meta/creative_fatigue_001.json", "meta_creative_fatigue_001")
+        self.assertGreaterEqual(result["rubric_score"], 80)
+        self.assertEqual(result["penalty"], 0.0)
+
+    def test_cross_channel_reference_scores_high_with_channel_coverage(self):
+        result = self._score("cross_channel/platform_cpa_lies_001.json", "cross_channel_platform_cpa_lies_001")
+        self.assertGreaterEqual(result["rubric_score"], 90)
+        protect = next(i for i in result["items"] if i["criterion"] == "gen.diagnosis.preserve_converters")
+        self.assertEqual(protect["findings"], ["Google Search"])  # data-derived from CRM
+        self.assertEqual(protect["coverage"], 1.0)
+
+    def test_hard_case_data_check_isolates_underwater_campaign(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "blended_roas_trap_001.json")
+        findings = compute_findings(
+            case,
+            {"block": "Account ROAS by campaign, last 30 days", "where": {"roas": {"<": 1.8}}, "select": "campaign"},
+        )
+        self.assertEqual(findings, ["Non-brand Search (prospecting)"])
+
+    def test_hard_case_reference_scores_high(self):
+        result = self._score("google/blended_roas_trap_001.json", "google_blended_roas_trap_001")
+        self.assertGreaterEqual(result["rubric_score"], 90)
+        self.assertEqual(result["penalty"], 0.0)
+
+    def test_hard_case_penalizes_scaling_on_blended(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "blended_roas_trap_001.json")
+        bad = "Blended ROAS is above target, so yes, scale spend 50% next month across all campaigns."
+        result = score_response_rubric(case, bad)
+        self.assertGreater(result["penalty"], 0)
+        self.assertLess(result["rubric_score"], 50)
+
+
 class ValidateCaseRubricTest(unittest.TestCase):
     def _case_with_rubric(self, rubric):
         return {

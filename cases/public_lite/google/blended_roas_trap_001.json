@@ -1,0 +1,125 @@
+{
+  "id": "google_blended_roas_trap_001",
+  "title": "Blended ROAS looks healthy but new-customer economics are underwater",
+  "provider": "google_ads",
+  "category": "budget_allocation",
+  "difficulty": "hard",
+  "business": {
+    "vertical": "ecommerce",
+    "product": "home goods catalog",
+    "aov": "$70",
+    "gross_margin": "55%",
+    "breakeven_roas": "approximately 1.8",
+    "goal": "profitable new-customer growth"
+  },
+  "user_prompt": "Blended ROAS is 3.8, above our 3.0 target. Can we scale spend 50% next month?",
+  "data": [
+    {
+      "name": "Account ROAS by campaign, last 30 days",
+      "rows": [
+        {"campaign": "Brand Search", "spend": 1500, "revenue": 19500, "roas": 13.0},
+        {"campaign": "Non-brand Search (prospecting)", "spend": 6000, "revenue": 6600, "roas": 1.1},
+        {"campaign": "Shopping", "spend": 4000, "revenue": 12000, "roas": 3.0},
+        {"campaign": "Performance Max", "spend": 5000, "revenue": 25000, "roas": 5.0}
+      ]
+    },
+    {
+      "name": "New vs returning customers, blended",
+      "rows": [
+        {"segment": "New customers", "roas": 1.0},
+        {"segment": "Returning customers", "roas": 9.5}
+      ]
+    },
+    {
+      "name": "Setup notes",
+      "rows": [
+        {"item": "Performance Max", "value": "Not excluding brand traffic; overlaps Brand Search"},
+        {"item": "margin", "value": "55% gross margin, approximate breakeven ROAS 1.8"},
+        {"item": "attribution", "value": "Last-click, 30-day window"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {
+        "id": "blended_inflated",
+        "label": "Recognizes blended ROAS is brand/returning-inflated",
+        "phrases": ["blended", "brand-inflated", "brand is inflating", "aggregate hides", "not the blended"],
+        "weight": 3,
+        "skills": ["diagnosis", "measurement"]
+      },
+      {
+        "id": "new_customer_underwater",
+        "label": "Identifies new-customer / non-brand economics as underwater",
+        "phrases": ["new customer", "new-customer roas", "incremental", "returning"],
+        "weight": 3,
+        "skills": ["business_economics", "measurement"]
+      },
+      {
+        "id": "breakeven_margin",
+        "label": "Uses margin/breakeven ROAS as the bar",
+        "phrases": ["breakeven", "break-even", "1.8", "below breakeven"],
+        "weight": 2,
+        "skills": ["business_economics"]
+      },
+      {
+        "id": "exclude_brand_pmax",
+        "label": "Separates brand from Performance Max/non-brand",
+        "phrases": ["brand exclusion", "exclude brand", "separate brand", "brand traffic"],
+        "weight": 1.5,
+        "skills": ["google_ads", "action_plan"]
+      },
+      {
+        "id": "dont_scale_blended",
+        "label": "Declines to scale on the blended number",
+        "phrases": ["do not scale", "should not scale", "hold spend", "cautious about scaling"],
+        "weight": 1.5,
+        "skills": ["safety"]
+      }
+    ],
+    "forbidden_concepts": [
+      {
+        "id": "scale_yes",
+        "label": "Approves a 50% scale on blended ROAS",
+        "phrases": ["yes, scale", "go ahead and scale", "scale spend 50", "increase spend 50"],
+        "penalty": 35
+      },
+      {
+        "id": "trust_blended",
+        "label": "Treats blended ROAS as sufficient justification",
+        "phrases": ["blended roas is healthy so", "roas is above target so", "since roas is above target"],
+        "penalty": 20
+      }
+    ],
+    "rubric": [
+      {
+        "criterion": "gen.measurement.segment_not_blended",
+        "expected": "flag",
+        "weight": 3,
+        "skills": ["diagnosis", "measurement"],
+        "note": "the underwater growth lever is the campaign below breakeven ROAS; naming it is the senior tell.",
+        "data_check": {
+          "block": "Account ROAS by campaign, last 30 days",
+          "where": {"roas": {"<": 1.8}},
+          "select": "campaign"
+        },
+        "detect": ["blended", "brand", "new customer", "incremental", "returning"]
+      },
+      {
+        "criterion": "gen.safety.no_premature_budget_change",
+        "expected": "avoid",
+        "weight": 2,
+        "skills": ["safety", "business_economics"],
+        "penalty": 35,
+        "detect": ["scale spend 50", "scale 50%", "increase spend 50", "yes, scale", "go ahead and scale"]
+      },
+      {
+        "criterion": "gen.measurement.use_rate_denominators",
+        "expected": "respect",
+        "weight": 1.5,
+        "skills": ["measurement", "business_economics"],
+        "detect": ["roas", "margin", "breakeven", "cac", "new-customer"]
+      }
+    ]
+  }
+}

@@ -113,12 +113,14 @@ mediabuyerbench score \
   --rubric
 ```
 
-See `rubrics/README.md`. This is additive: the v0 concept scorer and existing
-cases are unchanged.
+An optional LLM judge (`mediabuyerbench/judge.py`) can grade the subjective
+`judge`/`hybrid` criteria; add `--judge` (it shells out to the `claude` CLI, off
+by default so CI stays deterministic). See `rubrics/README.md`. This is additive:
+the v0 concept scorer and existing cases are unchanged.
 
 This is not the final evaluation quality ceiling. It is the public skeleton. Next iterations should add:
 
-- LLM judge scoring for the `judge`/`hybrid` rubric items
+- pinned judge model/version + human-calibration of the LLM judge
 - multi-turn tool simulation
 - sandbox state mutation and approval-gating
 - richer platform case packs

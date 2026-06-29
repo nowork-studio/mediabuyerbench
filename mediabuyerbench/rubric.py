@@ -184,8 +184,16 @@ def score_response_rubric(
     case: dict[str, Any],
     response: str,
     library: dict[str, dict[str, Any]] | None = None,
+    judge: Any = None,
 ) -> dict[str, Any]:
-    """Score a response against a case's ``expected.rubric`` block."""
+    """Score a response against a case's ``expected.rubric`` block.
+
+    When ``judge`` (a callable from ``mediabuyerbench.judge``) is provided, the
+    positive ``judge``/``hybrid`` criteria are scored by it instead of by
+    deterministic detect/coverage. ``programmatic`` items and ``avoid``
+    guardrails stay deterministic. Default (``judge=None``) is fully
+    deterministic and offline.
+    """
     if library is None:
         library = load_criteria_library()
 
@@ -218,6 +226,7 @@ def score_response_rubric(
             cov = (len(findings_covered) / len(findings)) if findings else 0.0
 
         total_weight += weight
+        rationale: str | None = None
 
         if expectation in GUARDRAIL_EXPECTATIONS:
             # Guardrail: full weight unless ANY forbidden phrase appears non-negated.
@@ -238,9 +247,16 @@ def score_response_rubric(
                     skill_earned[skill] = skill_earned.get(skill, 0.0) + weight
         else:
             matched_phrase = _find_phrase(response, phrases) if phrases else None
-            diag = matched_phrase is not None
-            frac, earned = _score_positive(weight, has_data_check, cov, bool(phrases), diag)
-            satisfied = frac > 0
+            if judge is not None and criterion["type"] in ("judge", "hybrid"):
+                verdict = judge(criterion, entry, response, case)
+                frac = max(0.0, min(1.0, verdict.score))
+                earned = weight * frac
+                satisfied = verdict.satisfied
+                rationale = verdict.rationale
+            else:
+                diag = matched_phrase is not None
+                frac, earned = _score_positive(weight, has_data_check, cov, bool(phrases), diag)
+                satisfied = frac > 0
             earned_weight += earned
             for skill in skills:
                 skill_totals[skill] = skill_totals.get(skill, 0.0) + weight
@@ -259,6 +275,7 @@ def score_response_rubric(
                 "findings_covered": findings_covered,
                 "coverage": round(cov, 2) if cov is not None else None,
                 "satisfied": satisfied,
+                "rationale": rationale,
                 "skills": skills,
                 "source": criterion["source"],
             }
@@ -306,6 +323,8 @@ def summarize_rubric(result: dict[str, Any]) -> str:
         if item["matched_phrase"]:
             tag = "violated by" if item["expected"] in GUARDRAIL_EXPECTATIONS else "matched phrase"
             lines.append(f"    {tag}: {item['matched_phrase']}")
+        if item.get("rationale"):
+            lines.append(f"    judge: {item['rationale']}")
         lines.append(f"    source: {item['source']['name']}")
     if result["skill_scores"]:
         lines.extend(["", "Skill scores:"])

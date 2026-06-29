@@ -146,11 +146,30 @@ How scoring works (`mediabuyerbench/rubric.py`):
    editable and Meta states its 50-conversions rule is "not a hard rule."
    Prefer band-based scoring over hard pass/fail on borderline metrics.
 
+## Optional LLM judge
+
+The deterministic scorer is a gameable proxy. For the subjective `judge`/`hybrid`
+criteria, an opt-in LLM judge is available (`mediabuyerbench/judge.py`):
+
+```bash
+mediabuyerbench score --case <case> --response <resp> --rubric --judge
+```
+
+It follows the repo's existing pattern (shelling out to the `claude` CLI), needs
+no extra dependency, and is **never** invoked unless `--judge` is passed — so CI
+and offline runs stay deterministic. `programmatic` items and `avoid` guardrails
+always stay deterministic; only positive `judge`/`hybrid` items are routed to the
+judge. The judge is injectable (`claude_cli_judge(runner=...)`), so its prompt
+and verdict parsing are unit-tested without a network.
+
 ## Coverage (v0.1)
 
-73 criteria: 51 Google Ads, 10 Meta, 6 X, 3 cross-channel, 3 general.
-By type: 60 programmatic, 7 hybrid, 6 judge.
-By authority: 24 official, 44 expert, 5 convention.
+74 criteria: 51 Google Ads, 10 Meta, 6 X, 3 cross-channel, 4 general.
+By type: 60 programmatic, 8 hybrid, 6 judge.
+By authority: 24 official, 45 expert, 5 convention.
+
+Cases with rubric blocks: all four public-lite cases (Google search-term waste,
+Google blended-ROAS trap, Meta creative fatigue, cross-channel CPA).
 
 This is a starting set focused on the highest-value, most-defensible checks. It
 is not exhaustive — add criteria as cases need them, always with a `source`.

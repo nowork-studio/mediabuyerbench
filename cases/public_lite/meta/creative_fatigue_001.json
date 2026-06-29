@@ -88,6 +88,43 @@
         "phrases": ["turn off all", "pause all ads", "kill all"],
         "penalty": 25
       }
+    ],
+    "rubric": [
+      {
+        "criterion": "m.creative.frequency_fatigue",
+        "expected": "flag",
+        "weight": 3,
+        "skills": ["diagnosis", "meta_ads", "creative_strategy"],
+        "detect": ["fatigue", "frequency", "saturation"]
+      },
+      {
+        "criterion": "gen.diagnosis.preserve_converters",
+        "expected": "respect",
+        "weight": 2,
+        "skills": ["creative_strategy", "safety"],
+        "note": "the controls worth keeping are the lower-CPA creatives; naming them is a more senior answer.",
+        "data_check": {
+          "block": "Creative delivery",
+          "where": {"current_cpa": {"<": 50}},
+          "select": "creative"
+        },
+        "detect": ["keep", "control", "preserve", "maintain"]
+      },
+      {
+        "criterion": "gen.measurement.use_rate_denominators",
+        "expected": "respect",
+        "weight": 2,
+        "skills": ["measurement"],
+        "detect": ["ctr", "cvr", "conversion rate", "frequency"]
+      },
+      {
+        "criterion": "gen.safety.no_premature_budget_change",
+        "expected": "avoid",
+        "weight": 1.5,
+        "skills": ["safety", "business_economics"],
+        "penalty": 30,
+        "detect": ["scale immediately", "increase spend now", "raise budget immediately", "scale now"]
+      }
     ]
   }
 }

@@ -24,8 +24,11 @@ ground truth is derived from each case's own `data` via `data_check`, and each
 positive item earns half from coverage of those findings and half from the
 `detect` diagnosis (so the data check is a real input, not decoration).
 Guardrail items penalize any non-negated forbidden phrase. The matching is
-substring-based — transparent but gameable — so `judge`/`hybrid` criteria are
-tagged for a pinned LLM judge to take over later. See `rubrics/README.md`.
+substring-based — transparent but gameable — so `judge`/`hybrid` criteria can be
+routed to an optional LLM judge (`mediabuyerbench/judge.py`, opt-in via
+`--judge`, shells out to the `claude` CLI, off by default). The judge is
+injectable so its logic is unit-tested offline. Next: pin the judge
+model/version and calibrate it against human ratings. See `rubrics/README.md`.
 
 Future versions should add:
 

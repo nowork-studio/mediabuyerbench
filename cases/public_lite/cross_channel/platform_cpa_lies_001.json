@@ -87,6 +87,50 @@
         "phrases": ["maximize leads", "lead volume is the goal", "more leads at lower cpa"],
         "penalty": 25
       }
+    ],
+    "rubric": [
+      {
+        "criterion": "xc.attribution.platform_cpa_vs_truth",
+        "expected": "flag",
+        "weight": 3,
+        "skills": ["budget_allocation", "cross_channel", "business_economics"],
+        "detect": ["platform cpa", "crm", "sql", "pipeline", "quality"]
+      },
+      {
+        "criterion": "xc.attribution.window_mismatch",
+        "expected": "flag",
+        "weight": 2,
+        "skills": ["measurement", "meta_ads"],
+        "detect": ["view-through", "7-day click", "1-day view", "attribution", "inflated"]
+      },
+      {
+        "criterion": "gen.diagnosis.preserve_converters",
+        "expected": "respect",
+        "weight": 2,
+        "skills": ["budget_allocation", "cross_channel"],
+        "note": "the channel to protect is the one producing real pipeline/opportunities (Google Search), derived from CRM data.",
+        "data_check": {
+          "block": "CRM quality, same cohort",
+          "where": {"opportunities": {">=": 8}},
+          "select": "channel"
+        },
+        "detect": ["google", "keep", "do not move budget", "pipeline"]
+      },
+      {
+        "criterion": "gen.safety.no_premature_budget_change",
+        "expected": "avoid",
+        "weight": 1.5,
+        "skills": ["safety", "budget_allocation"],
+        "penalty": 30,
+        "detect": ["move budget to meta", "shift budget to meta", "meta is cheaper so"]
+      },
+      {
+        "criterion": "gen.measurement.use_rate_denominators",
+        "expected": "respect",
+        "weight": 1.5,
+        "skills": ["business_economics", "measurement"],
+        "detect": ["cac", "pipeline per", "cost per opportunity", "sql rate", "conversion rate"]
+      }
     ]
   }
 }

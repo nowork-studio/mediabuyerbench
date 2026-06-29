@@ -991,6 +991,20 @@
       "tunable": false,
       "judge_guidance": "Penalize reflexive 'increase budget' recommendations that ignore the diagnosed bottleneck.",
       "source": {"name": "PPC audit best practice (fix cause before scaling spend)", "url": "https://www.optmyzr.com/guide/ppc-audit/"}
+    },
+    {
+      "id": "gen.measurement.segment_not_blended",
+      "provider": "general",
+      "category": "measurement",
+      "title": "Judge incremental/segment economics, not brand-inflated or blended aggregates",
+      "type": "hybrid",
+      "authority": "expert",
+      "condition": "Do not act on a blended/aggregate metric (blended ROAS, account CPA, PMax including brand) that hides segment-level economics; separate brand vs non-brand and new vs returning before deciding to scale.",
+      "default_threshold": null,
+      "window_days": null,
+      "tunable": false,
+      "judge_guidance": "Reward separating brand/returning (inflated) from non-brand/new-customer (incremental) economics; penalize scaling decisions justified by a blended number.",
+      "source": {"name": "PPC measurement best practice (incrementality vs blended ROAS)", "url": "https://www.optmyzr.com/guide/ppc-audit/"}
     }
   ]
 }
