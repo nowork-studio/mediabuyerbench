@@ -17,7 +17,7 @@
         "required": ["id", "provider", "category", "title", "type", "authority", "condition", "source"],
         "properties": {
           "id": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+\\.[a-z0-9_]+$"},
-          "provider": {"type": "string", "enum": ["google_ads", "meta_ads", "x_ads", "cross_channel"]},
+          "provider": {"type": "string", "enum": ["google_ads", "meta_ads", "x_ads", "cross_channel", "general"]},
           "category": {"type": "string"},
           "title": {"type": "string"},
           "type": {"type": "string", "enum": ["programmatic", "judge", "hybrid"]},

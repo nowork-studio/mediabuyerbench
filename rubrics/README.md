@@ -5,12 +5,22 @@ decisions. Each entry is a single checkable rule drawn from an authoritative
 PPC / paid-social source (the ad platforms themselves, Adalysis, Optmyzr,
 WordStream, Brad Geddes, and named practitioners).
 
-The library is **reference data**, not wired into the v0 scorer yet. It exists
-so case authors can attach consistent, defensible criteria to cases and so a
-future rubric/LLM-judge scorer has a ready vocabulary of checks to draw from.
+Case authors can attach consistent, defensible criteria to cases by id, and a
+deterministic rubric scorer (`mediabuyerbench/rubric.py`) reads them. A future
+LLM-judge scorer can reuse the same vocabulary for the `judge`/`hybrid` items.
 
-- `criteria_library.json` — the catalog (70 criteria).
+- `criteria_library.json` — the catalog (73 criteria).
 - `criteria.schema.json` — JSON Schema for the catalog format.
+
+See `cases/public_lite/google/search_term_waste_001.json` for a worked example
+case with a `rubric` block, and run it with:
+
+```bash
+mediabuyerbench score \
+  --case cases/public_lite/google/search_term_waste_001.json \
+  --response examples/responses/google_search_term_waste_001.md \
+  --rubric
+```
 
 ## Why this exists
 
@@ -60,11 +70,11 @@ so it is defensible rather than one person's opinion.
 - `caution` — an evidence-backed exception to the rule (see Ad Strength below).
 - `judge_guidance` — what an LLM-judge should assess, for `judge`/`hybrid` items.
 
-## How to attach criteria to a case (proposed convention)
+## How to attach criteria to a case
 
-The current case `expected` block (`required_concepts` / `forbidden_concepts`)
-is unchanged. The proposed forward-compatible addition is a `rubric` array that
-references criteria by `id` and overrides thresholds where the scenario differs:
+The existing `expected` block (`required_concepts` / `forbidden_concepts`) is
+unchanged and still drives the v0 concept scorer. A case may *additionally*
+carry a `rubric` array that references criteria by `id`:
 
 ```json
 "expected": {
@@ -73,31 +83,46 @@ references criteria by `id` and overrides thresholds where the scenario differs:
   "rubric": [
     {
       "criterion": "g.kw.zero_conversion_waste",
-      "weight": 3,
       "expected": "flag",
-      "threshold_override": {"clicks_min": 40},
-      "skills": ["diagnosis", "google_ads"]
-    },
-    {
-      "criterion": "xc.principle.no_aggregate_score_as_truth",
-      "weight": 2,
-      "expected": "respect"
+      "weight": 3,
+      "skills": ["diagnosis", "google_ads"],
+      "threshold_override": {"clicks_min": 25},
+      "data_check": {
+        "block": "Search terms, current period",
+        "where": {"conversions": {"==": 0}, "clicks": {">=": 25}},
+        "select": "query"
+      },
+      "detect": ["broad match", "irrelevant", "search term waste"]
     }
   ]
 }
 ```
 
-- `criterion` — the library `id`.
-- `expected` — what a correct answer does: `flag` / `act` / `respect` /
-  `avoid` (the case author decides the semantics for the scorer).
-- `threshold_override` — per-case tweak to `default_threshold` (the synthetic
-  data in a case is small, so click/spend floors usually need lowering).
-- `weight` / `skills` — mirror the existing concept scoring so a future scorer
-  can fold rubric items into the same 0-100 + per-skill breakdown.
+- `criterion` — the library `id` (provenance, type, authority, source).
+- `expected` — what a correct answer does: `flag` / `act` / `respect`
+  (positive) or `avoid` (guardrail; violation triggers `penalty`).
+- `weight` / `skills` — fold into a 0-100 rubric score + per-skill breakdown,
+  mirroring the concept scorer.
+- `threshold_override` — per-case tweak to the criterion's `default_threshold`.
+  Case data is small, so click/spend floors usually need lowering.
+- `data_check` — derives the **ground truth** from the case's own `data`: it
+  selects the `select` field from every row in the named `block` matching all
+  `where` conditions (operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `in`).
+  For the example above this returns the actually-wasteful search terms.
+- `detect` — phrases that drive the headline score (same deterministic
+  semantics as the concept scorer). When `detect` is omitted, scoring falls
+  back to coverage of the `data_check` findings.
 
-Programmatic criteria can be evaluated directly against a case's `data` tables;
-`judge`/`hybrid` criteria feed a fixed judge prompt. This is a design proposal —
-the schema and scorer have not been changed yet.
+How scoring works (`mediabuyerbench/rubric.py`):
+
+- **Ground truth** is computed from `data_check` — there is no outcome data, so
+  correctness comes from how the case was constructed.
+- **Headline score** is detect-phrase driven (so an abbreviated-but-correct
+  answer is not punished), reported per item with full source traceability.
+- **Completeness** is reported as `findings_covered / findings` — e.g. did the
+  answer enumerate every wasteful term, or only address the theme?
+- `judge`/`hybrid` items currently score deterministically via `detect`; they
+  are tagged so a future LLM-judge can take them over without changing cases.
 
 ## Important: read these caveats before scoring with this
 
@@ -115,9 +140,9 @@ the schema and scorer have not been changed yet.
 
 ## Coverage (v0.1)
 
-70 criteria: 51 Google Ads, 10 Meta, 6 X, 3 cross-channel.
-By type: 60 programmatic, 6 hybrid, 4 judge.
-By authority: 24 official, 41 expert, 5 convention.
+73 criteria: 51 Google Ads, 10 Meta, 6 X, 3 cross-channel, 3 general.
+By type: 60 programmatic, 7 hybrid, 6 judge.
+By authority: 24 official, 44 expert, 5 convention.
 
 This is a starting set focused on the highest-value, most-defensible checks. It
 is not exhaustive — add criteria as cases need them, always with a `source`.

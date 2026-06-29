@@ -90,6 +90,55 @@
         "phrases": ["ctr improved so", "optimize for ctr", "focus on ctr"],
         "penalty": 20
       }
+    ],
+    "rubric": [
+      {
+        "criterion": "g.kw.zero_conversion_waste",
+        "expected": "flag",
+        "weight": 3,
+        "skills": ["diagnosis", "google_ads"],
+        "threshold_override": {"clicks_min": 25},
+        "data_check": {
+          "block": "Search terms, current period",
+          "where": {"conversions": {"==": 0}, "clicks": {">=": 25}},
+          "select": "query"
+        },
+        "detect": ["broad match", "irrelevant", "search term waste", "query waste"]
+      },
+      {
+        "criterion": "gen.diagnosis.preserve_converters",
+        "expected": "respect",
+        "weight": 2,
+        "skills": ["search_intent", "safety"],
+        "data_check": {
+          "block": "Search terms, current period",
+          "where": {"conversions": {">=": 1}},
+          "select": "query"
+        },
+        "detect": ["preserve", "keep", "protect", "do not pause", "dog boarding near me"]
+      },
+      {
+        "criterion": "g.st.irrelevant_terms",
+        "expected": "act",
+        "weight": 2,
+        "skills": ["google_ads", "action_plan"],
+        "detect": ["negative keyword", "negatives", "jobs", "free", "cat boarding"]
+      },
+      {
+        "criterion": "gen.measurement.use_rate_denominators",
+        "expected": "respect",
+        "weight": 1.5,
+        "skills": ["measurement"],
+        "detect": ["cpa", "cvr", "conversion rate", "spend / conversions"]
+      },
+      {
+        "criterion": "gen.safety.no_premature_budget_change",
+        "expected": "avoid",
+        "weight": 1.5,
+        "skills": ["business_economics", "safety"],
+        "penalty": 30,
+        "detect": ["raise the budget", "increase budget immediately", "scale budget"]
+      }
     ]
   }
 }

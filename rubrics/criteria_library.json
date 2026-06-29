@@ -949,6 +949,48 @@
       "tunable": false,
       "judge_guidance": "Penalize responses that chase optimization score for its own sake; reward using the underlying individual checks against business goals.",
       "source": {"name": "Google Ads Help — optimization score (caveat)", "url": "https://support.google.com/google-ads/answer/9061546"}
+    },
+    {
+      "id": "gen.diagnosis.preserve_converters",
+      "provider": "general",
+      "category": "diagnosis",
+      "title": "Preserve converting queries/segments when cutting waste",
+      "type": "hybrid",
+      "authority": "expert",
+      "condition": "When removing waste, do not pause/negate queries, keywords, or segments that are converting profitably.",
+      "default_threshold": {"min_conversions_to_protect": 1},
+      "window_days": 30,
+      "tunable": true,
+      "judge_guidance": "The set of converters is programmatic from the data; whether the response protects them (vs blanket-pausing) is the judged call.",
+      "source": {"name": "Optmyzr / PPC audit best practice (cut waste, keep winners)", "url": "https://www.optmyzr.com/guide/ppc-audit/"}
+    },
+    {
+      "id": "gen.measurement.use_rate_denominators",
+      "provider": "general",
+      "category": "measurement",
+      "title": "Judge performance by CPA/CVR with denominators, not vanity metrics",
+      "type": "judge",
+      "authority": "expert",
+      "condition": "Diagnose with conversion-rate / CPA using proper denominators rather than reacting to CTR or raw clicks alone.",
+      "default_threshold": null,
+      "window_days": null,
+      "tunable": false,
+      "judge_guidance": "Reward responses that reason from CPA/CVR (conversions over clicks/spend); penalize treating a rising CTR as success while CPA worsens.",
+      "source": {"name": "Navah Hopkins / SEJ — audit reasoning", "url": "https://www.searchenginejournal.com/google-ads-audit/361156/"}
+    },
+    {
+      "id": "gen.safety.no_premature_budget_change",
+      "provider": "general",
+      "category": "safety",
+      "title": "Do not raise budget before fixing the diagnosed cause",
+      "type": "judge",
+      "authority": "expert",
+      "condition": "Do not recommend raising/scaling budget as the primary fix when the real problem is waste, tracking, or relevance.",
+      "default_threshold": null,
+      "window_days": null,
+      "tunable": false,
+      "judge_guidance": "Penalize reflexive 'increase budget' recommendations that ignore the diagnosed bottleneck.",
+      "source": {"name": "PPC audit best practice (fix cause before scaling spend)", "url": "https://www.optmyzr.com/guide/ppc-audit/"}
     }
   ]
 }

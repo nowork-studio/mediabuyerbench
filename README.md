@@ -94,9 +94,28 @@ This v0 scorer is deliberately simple and inspectable.
 - Forbidden concepts subtract points and are surfaced as hard warnings.
 - Provider and skill scores are derived from the matched concepts.
 
+### Rubric scoring (additive)
+
+On top of concept matching, cases may carry an `expected.rubric` block that
+references the source-backed criteria in `rubrics/` (Adalysis, Google/Meta/X
+docs, Optmyzr, etc.). Each criterion records its threshold, machine-checkability
+(`programmatic`/`judge`/`hybrid`), and source authority (`official`/`expert`/
+`convention`). A `data_check` derives ground truth from the case's own data, so
+correctness comes from how the case was built rather than from outcome data.
+
+```bash
+mediabuyerbench score \
+  --case cases/public_lite/google/search_term_waste_001.json \
+  --response examples/responses/google_search_term_waste_001.md \
+  --rubric
+```
+
+See `rubrics/README.md`. This is additive: the v0 concept scorer and existing
+cases are unchanged.
+
 This is not the final evaluation quality ceiling. It is the public skeleton. Next iterations should add:
 
-- LLM judge rubrics for seniority/quality
+- LLM judge scoring for the `judge`/`hybrid` rubric items
 - multi-turn tool simulation
 - sandbox state mutation and approval-gating
 - richer platform case packs

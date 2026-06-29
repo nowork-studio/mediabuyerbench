@@ -15,6 +15,16 @@ MediaBuyerBench starts as a static benchmark because case quality matters more t
 
 The first scorer is deterministic concept matching. It is intentionally limited but transparent. It helps contributors see what the case is testing.
 
+## Rubric layer
+
+`rubrics/criteria_library.json` is a source-backed catalog of audit criteria
+(threshold, machine-checkability, source authority). Cases attach criteria via
+`expected.rubric`, and `mediabuyerbench/rubric.py` scores them deterministically:
+ground truth is derived from each case's own `data` via `data_check`, headline
+score is detect-phrase driven, and completeness (findings covered) is reported.
+`judge`/`hybrid` criteria are tagged so an LLM judge can take them over later
+without changing cases. See `rubrics/README.md`.
+
 Future versions should add:
 
 1. Expert rubric scoring for seniority and prioritization.
