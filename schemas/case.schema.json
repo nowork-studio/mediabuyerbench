@@ -28,7 +28,32 @@
       "required": ["required_concepts"],
       "properties": {
         "required_concepts": {"type": "array"},
-        "forbidden_concepts": {"type": "array"}
+        "forbidden_concepts": {"type": "array"},
+        "rubric": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["criterion"],
+            "properties": {
+              "criterion": {"type": "string"},
+              "expected": {"type": "string", "enum": ["flag", "act", "respect", "avoid"]},
+              "weight": {"type": "number"},
+              "penalty": {"type": "number"},
+              "skills": {"type": "array", "items": {"type": "string"}},
+              "note": {"type": "string"},
+              "detect": {"type": "array", "items": {"type": "string"}},
+              "data_check": {
+                "type": "object",
+                "required": ["block", "select"],
+                "properties": {
+                  "block": {"type": "string"},
+                  "select": {"type": "string"},
+                  "where": {"type": "object"}
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

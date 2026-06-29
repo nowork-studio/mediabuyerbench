@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from mediabuyerbench.evaluator import load_case, render_prompt, score_response, summarize_score
+from mediabuyerbench.rubric import score_response_rubric, summarize_rubric
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -34,10 +35,23 @@ def cmd_score(args: argparse.Namespace) -> int:
     case = load_case(args.case)
     response = Path(args.response).read_text(encoding="utf-8")
     score = score_response(case, response)
+    want_rubric = getattr(args, "rubric", False) or getattr(args, "judge", False)
+    judge = None
+    if getattr(args, "judge", False):
+        from mediabuyerbench.judge import claude_cli_judge
+
+        judge = claude_cli_judge(model=getattr(args, "judge_model", "sonnet"))
+    rubric = score_response_rubric(case, response, judge=judge) if want_rubric else None
     if args.json:
-        print(json.dumps(score, indent=2))
+        if rubric is not None:
+            print(json.dumps({"concept_score": score, "rubric_score": rubric}, indent=2))
+        else:
+            print(json.dumps(score, indent=2))
     else:
         print(summarize_score(score))
+        if rubric is not None:
+            print("\n" + "=" * 40 + "\nRubric scoring\n" + "=" * 40)
+            print(summarize_rubric(rubric))
     return 0 if score["overall_score"] >= args.min_score else 1
 
 
@@ -83,6 +97,9 @@ def build_parser() -> argparse.ArgumentParser:
     score_parser.add_argument("--response", required=True)
     score_parser.add_argument("--json", action="store_true")
     score_parser.add_argument("--min-score", type=float, default=0.0)
+    score_parser.add_argument("--rubric", action="store_true", help="Also score against the criteria-library rubric")
+    score_parser.add_argument("--judge", action="store_true", help="Use the LLM judge for judge/hybrid criteria (shells out to the claude CLI)")
+    score_parser.add_argument("--judge-model", default="sonnet", help="Model for the LLM judge (default: sonnet)")
     score_parser.set_defaults(func=cmd_score)
 
     sample_parser = sub.add_parser("run-samples", help="Score bundled sample responses")

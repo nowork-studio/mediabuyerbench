@@ -35,6 +35,31 @@ def validate_case(case: dict[str, Any], path: Path | None = None) -> None:
         raise ValueError(f"Case {case['id']} must define expected.required_concepts")
     if not expected["required_concepts"]:
         raise ValueError(f"Case {case['id']} must include at least one required concept")
+    _validate_rubric_structure(case, expected.get("rubric"))
+
+
+def _validate_rubric_structure(case: dict[str, Any], rubric: Any) -> None:
+    """Structural checks for an optional rubric block.
+
+    Criterion *existence* is validated separately against the library
+    (mediabuyerbench.rubric.validate_rubric) to keep this module dependency-free.
+    """
+    if rubric is None:
+        return
+    if not isinstance(rubric, list):
+        raise ValueError(f"Case {case['id']} expected.rubric must be a list")
+    allowed = {"flag", "act", "respect", "avoid"}
+    for item in rubric:
+        if "criterion" not in item:
+            raise ValueError(f"Case {case['id']} rubric item missing 'criterion'")
+        expectation = item.get("expected", "flag")
+        if expectation not in allowed:
+            raise ValueError(f"Case {case['id']} rubric item {item['criterion']} has invalid expected: {expectation}")
+        data_check = item.get("data_check")
+        if data_check is not None:
+            for key in ("block", "select"):
+                if key not in data_check:
+                    raise ValueError(f"Case {case['id']} rubric item {item['criterion']} data_check missing '{key}'")
 
 
 def render_prompt(case: dict[str, Any]) -> str:
