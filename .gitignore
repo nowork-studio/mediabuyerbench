@@ -7,3 +7,14 @@ build/
 dist/
 *.egg-info/
 .runs/
+
+# Reviewer-only case drafts derived from private customer patterns. These files
+# stay local until an approved, independently de-identified version is promoted.
+cases/private_google_review/
+examples/responses/private_google_review/
+docs/private_google_review.md
+cases/private_google_expert_review/
+examples/responses/private_google_expert_review/
+docs/private_google_expert_review.md
+source_packs/google_search_certification_v1.json
+suites/google_search_private_certification_v1.json

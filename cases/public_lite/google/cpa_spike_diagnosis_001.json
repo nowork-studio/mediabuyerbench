@@ -1,0 +1,66 @@
+{
+  "id": "google_cpa_spike_diagnosis_001",
+  "title": "Diagnose a CPA spike without overstating what broad-match evidence proves",
+  "provider": "google_ads",
+  "category": "diagnosis",
+  "difficulty": "medium",
+  "business": {
+    "vertical": "pet care",
+    "market": "Seattle",
+    "goal": "qualified booking requests",
+    "target_cpa": "$65 per qualified booking",
+    "services_offered": "Dog boarding and daycare only; the business does not offer cat boarding."
+  },
+  "user_prompt": "Qualified-booking CPA rose this week. What is the most supported diagnosis and smallest safe next action? Do not recommend a budget change unless the data supports it.",
+  "data": [
+    {
+      "name": "Campaign performance, complete 14-day periods",
+      "rows": [
+        {"period": "previous", "spend": 1180, "clicks": 410, "qualified_bookings": 20, "cpa": 59, "ctr": "6.2%"},
+        {"period": "current", "spend": 1420, "clicks": 515, "qualified_bookings": 14, "cpa": 101.43, "ctr": "7.1%"}
+      ]
+    },
+    {
+      "name": "Search terms, current period",
+      "notes": "These are selected high-spend queries, not the complete search-terms report.",
+      "rows": [
+        {"query": "dog boarding near me", "spend": 310, "qualified_bookings": 7},
+        {"query": "dog boarding jobs", "spend": 144, "qualified_bookings": 0},
+        {"query": "free dog sitting", "spend": 96, "qualified_bookings": 0},
+        {"query": "cat boarding seattle", "spend": 82, "qualified_bookings": 0}
+      ]
+    },
+    {
+      "name": "Change history and setup",
+      "rows": [
+        {"item": "keyword change", "value": "Broad-match expansion added two weeks ago"},
+        {"item": "conversion action", "value": "Qualified booking request, primary, counted once"},
+        {"item": "conversion lag", "value": "Qualified-booking reporting is normally complete within 48 hours; both periods ended more than 48 hours ago"},
+        {"item": "lead quality", "value": "No material lead-quality or landing-page change is known; campaign-level CRM disposition data is not included in this packet"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {"id": "broad_match_hypothesis", "label": "Treats broad-match expansion as a likely contributor, not proven sole cause", "phrases": ["likely contributor", "likely driver", "most supported hypothesis", "not proven", "does not prove", "association"], "weight": 3, "skills": ["diagnosis", "google_ads"]},
+      {"id": "uses_cvr_not_ctr", "label": "Explains that higher CTR does not override the qualified-booking conversion-rate decline", "phrases": ["ctr", "conversion rate", "cvr"], "weight": 2, "skills": ["measurement", "diagnosis"]},
+      {"id": "excludes_jobs", "label": "Excludes clearly irrelevant job-seeking traffic", "phrases": ["negative", "jobs"], "weight": 1.5, "skills": ["action_plan", "safety"]},
+      {"id": "excludes_free", "label": "Excludes clearly irrelevant free-sitting traffic", "phrases": ["negative", "free"], "weight": 1.5, "skills": ["action_plan", "safety"]},
+      {"id": "excludes_cat_after_service_check", "label": "Excludes cat-boarding traffic because the business does not offer it", "phrases": ["cat boarding", "does not offer cats", "no cat boarding"], "weight": 1.5, "skills": ["action_plan", "safety"]},
+      {"id": "protects_intent", "label": "Preserves the converting dog-boarding query", "phrases": ["dog boarding near me", "preserve", "keep"], "weight": 2, "skills": ["search_intent", "safety"]},
+      {"id": "no_budget_change", "label": "Does not make a budget change the primary fix", "phrases": ["do not increase budget", "not a budget", "before changing budget"], "weight": 2, "skills": ["safety", "prioritization"]},
+      {"id": "verifies_full_search_terms", "label": "Reviews the complete search-terms report and match types before broader exclusions", "phrases": ["full search terms report", "complete search terms report", "search terms report", "match type"], "weight": 2, "skills": ["measurement", "action_plan"]},
+      {"id": "checks_quality_before_broader_changes", "label": "Checks campaign-level lead quality before broader changes", "phrases": ["lead quality", "crm", "qualified lead"], "weight": 1.5, "skills": ["measurement", "safety"]}
+    ],
+    "required_assertions": [
+      {"id": "current_cpa", "label": "Reports current CPA of about $101.43", "type": "number", "value": 101.43, "tolerance": 0.5, "weight": 1, "skills": ["calculation", "measurement"]},
+      {"id": "prior_cpa", "label": "Reports prior CPA of about $59", "type": "number", "value": 59, "tolerance": 1, "weight": 1, "skills": ["calculation", "measurement"]},
+      {"id": "current_cvr", "label": "Reports current qualified-booking conversion rate of about 2.72%", "type": "number", "value": 2.72, "tolerance": 0.15, "weight": 1, "skills": ["calculation", "measurement"]},
+      {"id": "prior_cvr", "label": "Reports prior qualified-booking conversion rate of about 4.88%", "type": "number", "value": 4.88, "tolerance": 0.15, "weight": 1, "skills": ["calculation", "measurement"]}
+    ],
+    "forbidden_concepts": [
+      {"id": "budget_primary_fix", "label": "Raises budget as the primary fix", "phrases": ["increase budget immediately", "raise the budget", "scale budget"], "penalty": 35},
+      {"id": "unsupported_causality", "label": "Claims broad match is the proven or sole cause", "phrases": ["broad match caused", "broad-match caused", "proves broad match", "sole cause"], "penalty": 25}
+    ]
+  }
+}

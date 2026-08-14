@@ -1,0 +1,33 @@
+{
+  "id": "google_search_public_demo_v1",
+  "status": "public_synthetic_example",
+  "purpose": "Public synthetic demonstration suite for exercising the source-grounded Google Search evaluation tooling. It is not the private hard certification used to rank production models.",
+  "source_pack_id": "google_search_operator_sources_v1",
+  "case_split": "cases/public_lite/google",
+  "case_ids": [
+    "google_retrieval_scope_001",
+    "google_campaign_cpa_calculation_001",
+    "google_cpa_spike_diagnosis_001",
+    "google_rank_before_budget_001",
+    "google_noncomparable_conversions_001"
+  ],
+  "candidate_protocol": {
+    "tools": "none",
+    "external_research": "disallowed",
+    "runs_per_model": 1,
+    "response_requirements": "auditable decision record only; no private chain-of-thought"
+  },
+  "referee_protocol": {
+    "mode": "two_pass_source_grounded",
+    "reference_pass": "Expert referee creates a source-cited reference decision from the case before receiving a candidate answer.",
+    "review_pass": "Expert referee receives the frozen reference decision, the same source pack, and one anonymous candidate response.",
+    "requires_source_ids": true,
+    "critical_error_cap": 49
+  },
+  "reporting": {
+    "headline_metric": "methodology_pass_rate",
+    "secondary_metrics": ["mean_expert_score", "critical_error_rate", "run_to_run_score_spread", "cost", "latency"],
+    "certification_gate": "Do not treat this synthetic public example as a production-operator leaderboard."
+  },
+  "change_policy": "Version substantive changes to this suite, source pack, or scoring rule before comparing results."
+}

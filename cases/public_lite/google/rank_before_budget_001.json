@@ -1,0 +1,46 @@
+{
+  "id": "google_rank_before_budget_001",
+  "title": "Fix rank constraints before expanding a non-budget-limited campaign",
+  "provider": "google_ads",
+  "category": "recommendation",
+  "difficulty": "medium",
+  "business": {
+    "vertical": "legal services",
+    "market": "Phoenix",
+    "goal": "qualified consultation requests",
+    "target_cpa": "$65 per qualified consultation"
+  },
+  "user_prompt": "Should we increase this campaign's $75 daily budget next week? Give the smallest safe next action and what to measure before reconsidering budget.",
+  "data": [
+    {
+      "name": "Campaign delivery, complete last 14 days",
+      "rows": [
+        {"campaign": "Nonbrand Family Law", "daily_budget": 75, "spend": 1035, "qualified_consultations": 16, "cpa": 64.69, "budget_lost_impression_share": "0%", "rank_lost_impression_share": "38%", "status": "not budget limited"}
+      ]
+    },
+    {
+      "name": "Quality observations",
+      "rows": [
+        {"item": "search terms", "value": "Divorce lawyer and child custody lawyer have the strongest qualified-consultation rate"},
+        {"item": "ad assets", "value": "Two responsive search ads have Poor ad strength"},
+        {"item": "landing page", "value": "No material change during the period"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {"id": "not_budget_limited", "label": "Recognizes that the campaign is not budget limited", "phrases": ["not budget limited", "0%", "no budget"], "weight": 2, "skills": ["measurement", "safety"]},
+      {"id": "rank_constraint", "label": "Prioritizes Ad Rank / rank-lost impression share", "phrases": ["rank", "ad rank", "lost impression share"], "weight": 3, "skills": ["diagnosis", "google_ads"]},
+      {"id": "improve_assets", "label": "Improves poor responsive-search-ad assets before budget", "phrases": ["poor ad strength", "responsive search ad", "ad asset"], "weight": 2, "skills": ["action_plan", "google_ads"]},
+      {"id": "preserve_high_intent", "label": "Protects the high-intent divorce/custody themes", "phrases": ["divorce lawyer", "child custody lawyer"], "weight": 1, "skills": ["search_intent", "safety"]},
+      {"id": "measurement_plan", "label": "Measures qualified-consultation CPA and rank loss before reconsidering budget", "phrases": ["qualified consultation", "cpa", "rank lost", "impression share"], "weight": 2, "skills": ["measurement", "action_plan"]}
+    ],
+    "required_assertions": [
+      {"id": "cpa", "label": "Reports CPA of about $64.69", "type": "number", "value": 64.69, "tolerance": 0.5, "weight": 1, "skills": ["calculation"]},
+      {"id": "rank_loss", "label": "Reports 38% rank-lost impression share", "type": "number", "value": 38, "tolerance": 0.01, "weight": 1, "skills": ["retrieval", "measurement"]}
+    ],
+    "forbidden_concepts": [
+      {"id": "increase_budget_now", "label": "Increases the budget immediately", "phrases": ["increase the budget", "raise the budget", "scale budget"], "penalty": 35}
+    ]
+  }
+}

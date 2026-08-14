@@ -1,0 +1,52 @@
+{
+  "id": "google_retrieval_scope_001",
+  "title": "Report complete-week qualified-booking performance with the correct scope",
+  "provider": "google_ads",
+  "category": "retrieval_scope",
+  "difficulty": "easy",
+  "business": {
+    "vertical": "local services",
+    "market": "Seattle",
+    "goal": "qualified booking requests",
+    "target_cpa": "$70 per qualified booking"
+  },
+  "user_prompt": "For the last complete 7 days, report total spend, clicks, qualified booking requests, CPA, and whether we hit target. State the scope you used.",
+  "data": [
+    {
+      "name": "Account reporting scope",
+      "rows": [
+        {"account": "Northstar Pet Care", "timezone": "America/Los_Angeles", "complete_period": "2026-07-20 through 2026-07-26", "primary_conversion": "Qualified booking request"}
+      ]
+    },
+    {
+      "name": "Complete-period account totals",
+      "rows": [
+        {"spend": 1200, "clicks": 480, "qualified_booking_requests": 15, "target_cpa": 70}
+      ]
+    },
+    {
+      "name": "Incomplete current-day totals — exclude",
+      "notes": "2026-07-27 is only half complete in the account timezone.",
+      "rows": [
+        {"spend": 420, "clicks": 143, "qualified_booking_requests": 2}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {"id": "uses_complete_week", "label": "Uses the complete July 20–26 local week", "phrases": ["july 20", "july 26", "complete 7 days", "complete week"], "weight": 2, "skills": ["scope", "measurement"]},
+      {"id": "uses_qualified_booking", "label": "Uses qualified booking requests as the conversion", "phrases": ["qualified booking"], "weight": 2, "skills": ["scope", "measurement"]},
+      {"id": "excludes_incomplete_day", "label": "Excludes the incomplete current day", "phrases": ["exclude", "incomplete", "half complete"], "weight": 1, "skills": ["scope", "safety"]},
+      {"id": "misses_target", "label": "States that the $80 CPA misses the $70 target", "phrases": ["misses target", "misses the target", "above target", "over target"], "weight": 2, "skills": ["calculation", "measurement"]}
+    ],
+    "required_assertions": [
+      {"id": "spend", "label": "Reports $1,200 spend", "type": "number", "value": 1200, "tolerance": 0, "weight": 1, "skills": ["retrieval"]},
+      {"id": "clicks", "label": "Reports 480 clicks", "type": "number", "value": 480, "tolerance": 0, "weight": 1, "skills": ["retrieval"]},
+      {"id": "qualified_bookings", "label": "Reports 15 qualified booking requests", "type": "number", "value": 15, "tolerance": 0, "weight": 1, "skills": ["retrieval"]},
+      {"id": "cpa", "label": "Reports $80 CPA", "type": "number", "value": 80, "tolerance": 0.01, "weight": 2, "skills": ["calculation", "measurement"]}
+    ],
+    "forbidden_concepts": [
+      {"id": "uses_incomplete_day", "label": "Includes the incomplete current day in the answer", "phrases": ["$1,620", "1620 spend", "17 qualified booking"], "penalty": 35}
+    ]
+  }
+}

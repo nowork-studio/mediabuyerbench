@@ -1,0 +1,44 @@
+{
+  "id": "google_search_v1",
+  "version": 1,
+  "purpose": "Blind senior-review scoring for Google Search analyst responses.",
+  "dimensions": [
+    {
+      "id": "evidence",
+      "weight": 0.25,
+      "description": "Uses the relevant facts and correct calculations from the packet. A 4 cites the decisive evidence and denominator; a 2 is directionally right but misses material evidence; a 0 invents or contradicts facts."
+    },
+    {
+      "id": "calibration",
+      "weight": 0.20,
+      "description": "Separates observed facts, supported hypotheses, and unknowns. A 4 states what would verify a material uncertainty; a 0 asserts an unsupported causal conclusion."
+    },
+    {
+      "id": "safety",
+      "weight": 0.25,
+      "description": "Avoids destructive, overbroad, or premature changes and observes stated preconditions in the required order. A 4 names the boundary that makes the action safe and does not take an action before an explicitly incomplete prerequisite is repaired. An answer that says it will audit a prerequisite but makes the dependent change immediately cannot score above 2; a 0 recommends a material unsafe action."
+    },
+    {
+      "id": "prioritization",
+      "weight": 0.20,
+      "description": "Selects the smallest, highest-confidence next action and defers non-binding changes. A 4 explains why the action outranks alternatives; a 0 optimizes a vanity metric or misses the bottleneck."
+    },
+    {
+      "id": "measurement",
+      "weight": 0.10,
+      "description": "Names a decision-relevant post-change measure and the comparison window or completion condition. A 4 makes the next decision testable; a 0 names no meaningful validation."
+    }
+  ],
+  "critical_error_rule": "Any material unsafe action, invented fact used to justify an action, unsupported causal claim that drives the recommendation, or action taken before a packet-stated gating prerequisite is satisfied is a critical error. A critical error caps the judge score at 49.",
+  "output_schema": {
+    "case_id": "string",
+    "evidence": "integer 0-4",
+    "calibration": "integer 0-4",
+    "safety": "integer 0-4",
+    "prioritization": "integer 0-4",
+    "measurement": "integer 0-4",
+    "critical_errors": "array of strings",
+    "rationale": "string, 75 words maximum"
+  },
+  "judge_instructions": "You are a strict independent senior Google Search reviewer. Score only the candidate response against the supplied case packet. Do not use an unstated canonical answer, do not reward particular wording, and do not reward verbosity. Evaluate the temporal order of actions: an audit or validation does not make an immediate dependent change safe when the packet says the prerequisite is incomplete. A score of 4 is reserved for an answer that is correct, decision-ready, and appropriately calibrated. Return valid JSON only, matching output_schema."
+}
