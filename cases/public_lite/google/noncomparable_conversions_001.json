@@ -1,0 +1,52 @@
+{
+  "id": "google_noncomparable_conversions_001",
+  "title": "Refuse a budget reallocation when campaign conversions are not comparable",
+  "provider": "google_ads",
+  "category": "safe_refusal",
+  "difficulty": "hard",
+  "business": {
+    "vertical": "healthcare services",
+    "market": "Austin",
+    "goal": "qualified appointment requests",
+    "requested_change": "Move 20% of Brand Search budget to Local Search"
+  },
+  "user_prompt": "Local Search has a lower CPA than Brand Search. Should I move 20% of Brand Search budget to Local Search today? Give a clear answer and the minimum evidence needed to make this decision safely.",
+  "data": [
+    {
+      "name": "Google Ads campaign totals, last 30 days",
+      "rows": [
+        {"campaign": "Brand Search", "spend": 3000, "primary_conversions": 60, "reported_cpa": 50},
+        {"campaign": "Local Search", "spend": 2400, "primary_conversions": 80, "reported_cpa": 30}
+      ]
+    },
+    {
+      "name": "Conversion-action configuration",
+      "rows": [
+        {"campaign": "Brand Search", "primary_conversion": "Appointment form submitted", "counting": "one"},
+        {"campaign": "Local Search", "primary_conversion": "Phone-call click", "counting": "every"}
+      ]
+    },
+    {
+      "name": "CRM availability",
+      "rows": [
+        {"item": "qualified appointments by campaign", "value": "Not available"},
+        {"item": "booked appointments by campaign", "value": "Not available"}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {"id": "declines_reallocation", "label": "Declines to move budget today", "phrases": ["do not move", "don't move", "not yet", "cannot safely"], "weight": 3, "skills": ["safety", "prioritization"]},
+      {"id": "noncomparable_actions", "label": "Identifies non-comparable conversion actions and counting rules", "phrases": ["not comparable", "appointment form", "phone-call click", "counting"], "weight": 3, "skills": ["measurement", "scope"]},
+      {"id": "needs_crm_quality", "label": "Requests campaign-level qualified or booked appointment data", "phrases": ["qualified appointment", "booked appointment", "crm"], "weight": 3, "skills": ["measurement", "action_plan"]},
+      {"id": "normalizes_before_decision", "label": "Requires a common conversion definition before reallocating", "phrases": ["common conversion", "same conversion", "qualified-appointment conversion", "align both campaigns", "normalize", "aligned conversion"], "weight": 2, "skills": ["measurement", "safety"]}
+    ],
+    "required_assertions": [
+      {"id": "brand_reported_cpa", "label": "Reports Brand Search's $50 platform CPA", "type": "number", "value": 50, "tolerance": 0.01, "weight": 1, "skills": ["retrieval"]},
+      {"id": "local_reported_cpa", "label": "Reports Local Search's $30 platform CPA", "type": "number", "value": 30, "tolerance": 0.01, "weight": 1, "skills": ["retrieval"]}
+    ],
+    "forbidden_concepts": [
+      {"id": "moves_on_platform_cpa", "label": "Moves budget because Local Search has cheaper platform CPA", "phrases": ["move 20%", "shift 20%", "move budget to local"], "penalty": 45}
+    ]
+  }
+}

@@ -1,8 +1,10 @@
-# Public-lite baseline: GPT-5.5 vs Claude Sonnet vs Claude Opus
+# Historical baseline: original public-lite v0
 
 Run date: 2026-06-09
 
-Scope: 3 static public-lite cases in MediaBuyerBench v0.1: Google search term waste, Meta creative fatigue, cross-channel platform CPA conflict.
+Scope: 3 static public-lite v0.1 cases: Google search term waste, Meta creative fatigue, cross-channel platform CPA conflict.
+
+These artifacts are retained as a historical record only. The active `cases/public_lite` suite was replaced with five Google Ads analyst cases that add scope and numeric assertions, so these scores are not comparable to future runs.
 
 Important caveat: this first split is too small and too easy. Treat these as smoke-test baselines, not a meaningful leaderboard.
 

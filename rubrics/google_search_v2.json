@@ -1,0 +1,107 @@
+{
+  "id": "google_search_v2",
+  "version": 3,
+  "purpose": "Blind senior-review scoring for Google Search decisions. Scores the auditable decision method as well as the conclusion.",
+  "arbiter": {
+    "id": "google_search_operator_arbiter_v1",
+    "purpose": "Binding definition of a decision-ready Google Search operating method, distilled from the project's Google Ads operator skill and its Google Search playbooks. It is applied blindly to every candidate response.",
+    "provenance": [
+      "AdsAgent Google Ads operator skill v3.2.0",
+      "Bid Strategy Decision Tree",
+      "Campaign Structure Guide",
+      "Search Term Analysis Guide",
+      "Analysis Heuristics"
+    ],
+    "precedence": [
+      "The case packet is the source of truth for the business, measured facts, stated gates, and allowed scope. It overrides a generic playbook default when they conflict.",
+      "The arbiter defines the required operator method; it does not supply unstated facts, thresholds, causal mechanisms, or a hidden canonical conclusion.",
+      "When a needed fact is absent, reward the response for naming the uncertainty and proposing a narrow verification or reversible test. Do not reward invented certainty."
+    ],
+    "rules": [
+      {
+        "id": "conversion_goal_integrity",
+        "rule": "Optimize bidding to the verified business outcome, not a shallow platform proxy. Before changing a primary conversion goal or its target, reconcile the downstream definition, click-ID or CRM matching, deduplication, import coverage, and stated maturity window. Keep the existing bid target stable until the prerequisite is satisfied."
+      },
+      {
+        "id": "smart_bidding_maturity",
+        "rule": "Evaluate Smart Bidding on comparable, mature click cohorts and avoid stacking changes during learning or conversion lag. Relax or tighten a target only after mature evidence shows the target is constraining the stated outcome and the proposed change is bounded and isolated."
+      },
+      {
+        "id": "search_term_control",
+        "rule": "For an observed, clearly irrelevant query, prefer the narrowest negative that solves the demonstrated problem: exact for one query, phrase only for a verified recurring pattern, and campaign or shared scope only when every affected route should be blocked. Check match behavior, negative conflicts, business relevance, data sufficiency, and attribution lag before broad exclusions."
+      },
+      {
+        "id": "geo_serviceability",
+        "rule": "Local Search normally targets physical presence, but a mixed presence-or-interest report, missing verified service addresses, or approved surcharge zones makes a blanket exclusion unsupported. Establish verified physical location, serviceability, and unit economics before narrowing; preserve approved demand with an exact-scope reversible test or exclusion."
+      },
+      {
+        "id": "budget_and_incrementality",
+        "rule": "Separate brand and non-brand when they need distinct budgets or strategies, but do not treat platform CPA, impression share, or downstream-rate parity as proof of incremental value. At a fixed budget, make material reallocation only after a bounded controlled test can compare incremental business outcomes against the relevant alternative."
+      },
+      {
+        "id": "scope_and_validation",
+        "rule": "Name the exact account, campaign, ad group, query, location, or conversion-goal scope; prefer a reversible smallest action; change one material variable at a time; and state the outcome, denominator, mature window, comparison, and explicit go/no-go rule."
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "evidence_trace",
+      "weight": 0.20,
+      "methodology_gate": true,
+      "description": "Builds the recommendation from decisive packet facts, correct calculations, and the relevant denominator. A 4 identifies the facts that discriminate between plausible actions; a 2 reaches a directionally reasonable conclusion with incomplete or generic evidence; a 0 invents, contradicts, or does not connect evidence to the action. Do not award a 4 for merely repeating every metric."
+    },
+    {
+      "id": "causal_discipline",
+      "weight": 0.15,
+      "methodology_gate": true,
+      "description": "Separates observations, hypotheses, and causal claims. A 4 names a material confounder or unknown and says what would resolve it; a 2 is cautious but does not identify the relevant uncertainty; a 0 makes an unsupported causal claim that drives the recommendation."
+    },
+    {
+      "id": "preconditions_and_sequence",
+      "weight": 0.25,
+      "methodology_gate": true,
+      "description": "Names every material prerequisite and orders actions correctly. A 4 prevents a dependent mutation until the stated data, approval, eligibility, or maturity gate is satisfied; a 2 notices a prerequisite but still makes the dependent change too early; a 0 ignores a material gate."
+    },
+    {
+      "id": "intervention_scope",
+      "weight": 0.15,
+      "methodology_gate": true,
+      "description": "Chooses the smallest reversible action at the correct account, campaign, ad-group, query, or conversion-goal scope. A 4 explains why the scope preserves valuable traffic or learning; a 2 suggests an action without exact scope; a 0 recommends an overbroad or irreversible change."
+    },
+    {
+      "id": "decision_rule",
+      "weight": 0.15,
+      "methodology_gate": true,
+      "description": "Defines an outcome, denominator, comparison cohort/window, and explicit go/no-go condition for the next decision. A 4 makes the action falsifiable; a 2 lists metrics without a completion condition; a 0 gives no usable validation plan."
+    },
+    {
+      "id": "alternatives_and_tradeoffs",
+      "weight": 0.10,
+      "methodology_gate": false,
+      "description": "Explicitly rejects the tempting alternative using a packet fact and identifies the tradeoff preserved. A 4 states why the rejected action is wrong here but could be appropriate under different facts; a 2 says only 'do not do it'; a 0 misses the material alternative."
+    }
+  ],
+  "critical_error_rule": "Any material unsafe action, invented fact used to justify an action, unsupported causal claim that drives the recommendation, or action taken before a packet-stated gating prerequisite is satisfied is a critical error. A critical error caps the judge score at 49.",
+  "methodology_pass_rule": "Methodology passes only when there are no critical errors and every methodology_gate dimension scores at least 3. A correct-looking conclusion does not pass if it lacks an auditable evidence trace, skips a material uncertainty, makes a dependent change before its prerequisite, uses the wrong scope, or has no falsifiable decision rule.",
+  "output_schema": {
+    "case_id": "string",
+    "evidence_trace": "integer 0-4",
+    "causal_discipline": "integer 0-4",
+    "preconditions_and_sequence": "integer 0-4",
+    "intervention_scope": "integer 0-4",
+    "decision_rule": "integer 0-4",
+    "alternatives_and_tradeoffs": "integer 0-4",
+    "critical_errors": "array of strings",
+    "methodology_failures": "array of strings",
+    "evidence": {
+      "<dimension_id>": {
+        "response_excerpt": "short exact excerpt from candidate response",
+        "packet_facts": "array of short packet facts used to support the dimension score",
+        "arbiter_rule_ids": "array of applicable rule ids from the Google Search operator arbiter"
+      }
+    },
+    "rationale": "string, 100 words maximum"
+  },
+  "judge_instructions": "You are a strict, independent senior Google Search reviewer. Score only the candidate response against the supplied case packet. Judge the auditable decision method, not prose polish or an unstated chain of thought. A correct conclusion receives limited credit if the response does not show the decisive evidence, causal uncertainty, required order of operations, exact action scope, and a falsifiable decision rule. Do not infer missing reasoning. Do not reward generic cautions such as 'monitor results' or 'test carefully.' A score of 4 is reserved for a decision-ready answer whose method can be audited from the response. Cite the candidate excerpt, packet facts, and the applicable operator-arbiter rule ids for every dimension. Return valid JSON only, matching output_schema."
+}

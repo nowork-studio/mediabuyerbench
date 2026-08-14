@@ -1,0 +1,40 @@
+{
+  "id": "google_campaign_cpa_calculation_001",
+  "title": "Identify above-target campaigns from spend and qualified bookings",
+  "provider": "google_ads",
+  "category": "calculation",
+  "difficulty": "easy",
+  "business": {
+    "vertical": "home services",
+    "market": "Denver",
+    "goal": "qualified estimate requests",
+    "target_cpa": "$75 per qualified estimate"
+  },
+  "user_prompt": "Which campaigns exceeded our $75 qualified-estimate CPA target last week? Calculate CPA as spend divided by qualified estimates and name the first campaign you would investigate.",
+  "data": [
+    {
+      "name": "Complete-week campaign totals",
+      "rows": [
+        {"campaign": "Brand Search", "spend": 800, "qualified_estimates": 16},
+        {"campaign": "Nonbrand Search", "spend": 1050, "qualified_estimates": 10},
+        {"campaign": "Competitor Search", "spend": 600, "qualified_estimates": 6}
+      ]
+    }
+  ],
+  "expected": {
+    "required_concepts": [
+      {"id": "uses_qualified_estimates", "label": "Uses qualified estimates, not raw leads", "phrases": ["qualified estimate"], "weight": 2, "skills": ["scope", "measurement"]},
+      {"id": "names_nonbrand", "label": "Names Nonbrand Search as above target", "phrases": ["nonbrand search"], "weight": 2, "skills": ["retrieval", "calculation"]},
+      {"id": "names_competitor", "label": "Names Competitor Search as above target", "phrases": ["competitor search"], "weight": 2, "skills": ["retrieval", "calculation"]},
+      {"id": "prioritizes_nonbrand", "label": "Investigates Nonbrand Search first because it has the highest CPA", "phrases": ["nonbrand search first", "start with nonbrand", "highest cpa"], "weight": 2, "skills": ["prioritization", "action_plan"]}
+    ],
+    "required_assertions": [
+      {"id": "brand_cpa", "label": "Calculates Brand Search CPA as $50", "type": "number", "value": 50, "tolerance": 0.01, "weight": 1, "skills": ["calculation"]},
+      {"id": "nonbrand_cpa", "label": "Calculates Nonbrand Search CPA as $105", "type": "number", "value": 105, "tolerance": 0.01, "weight": 2, "skills": ["calculation"]},
+      {"id": "competitor_cpa", "label": "Calculates Competitor Search CPA as $100", "type": "number", "value": 100, "tolerance": 0.01, "weight": 2, "skills": ["calculation"]}
+    ],
+    "forbidden_concepts": [
+      {"id": "brand_above_target", "label": "Claims Brand Search exceeds the CPA target", "phrases": ["brand search exceeds", "brand search is above target", "pause brand"], "penalty": 40}
+    ]
+  }
+}

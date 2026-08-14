@@ -1,0 +1,84 @@
+{
+  "id": "google_search_operator_sources_v1",
+  "version": 1,
+  "as_of": "2026-08-13",
+  "purpose": "Public source pack for a Google Search evaluation referee. Sources establish platform mechanics and general operating principles; case-packet facts establish the advertiser-specific answer.",
+  "source_policy": [
+    "Use the case packet for measured facts, business constraints, and stated prerequisites. Do not substitute generic source guidance for packet facts.",
+    "Use official Google Ads documentation for product mechanics. Use Adalysis for operator heuristics and account-audit patterns. If the sources conflict or do not resolve a case, say so rather than inventing a rule.",
+    "A source citation supports a principle, not an unstated business fact, profitability threshold, causal claim, or numerical gate.",
+    "The referee must distinguish an observed fact, a working hypothesis, and a causal conclusion."
+  ],
+  "sources": [
+    {
+      "id": "google_primary_secondary_conversion_actions",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/11461796",
+      "scope": "Primary conversion actions are used for reporting and bidding when the associated goal is selected; secondary actions are generally observation-only.",
+      "operator_rule": "Verify which conversion action and goal bidding actually uses before diagnosing a Smart Bidding quality problem."
+    },
+    {
+      "id": "google_smart_bidding_goal_changes",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/14571185",
+      "scope": "Changing conversion goals or actions used for Smart Bidding requires time to learn; Google distinguishes account-level and campaign-level goal workflows.",
+      "operator_rule": "Do not stack a goal change with a bid-target change; use the narrowest eligible goal scope and evaluate mature post-change cohorts."
+    },
+    {
+      "id": "google_conversion_goal_management",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/10993988",
+      "scope": "Account-default goals affect campaigns using account defaults; campaigns with other goal combinations may not be affected.",
+      "operator_rule": "An account-default change requires explicit scope verification. Do not claim it safely affects only the focal campaign unless the packet establishes that."
+    },
+    {
+      "id": "google_geo_advanced_location_options",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/1722038",
+      "scope": "Presence targets people in or regularly in targeted locations; Presence or interest also includes people who show interest. Switching away from the default can reduce impressions.",
+      "operator_rule": "For local service, Presence may be appropriate, but a switch is still a material targeting change whose serviceability and exception policy must be established."
+    },
+    {
+      "id": "google_geo_targeting_limitations",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/2453995",
+      "scope": "Location signals include physical location and location of interest; location targeting is best effort and not perfectly accurate.",
+      "operator_rule": "Do not treat a mixed location report as proof of a user's physical service address or profitability."
+    },
+    {
+      "id": "google_reporting_discrepancies",
+      "authority": "Google Ads Help",
+      "url": "https://support.google.com/google-ads/answer/2404039",
+      "scope": "Conversion reporting can lag; campaign reporting and bidding depend on conversion-action and goal configuration.",
+      "operator_rule": "Check maturity, reporting delay, conversion configuration, and import integrity before reacting to a recent CPA movement."
+    },
+    {
+      "id": "adalysis_location_targeting",
+      "authority": "Adalysis",
+      "url": "https://adalysis.com/blog/understanding-optimizing-google-location-targeting-settings/",
+      "scope": "Location-option choice depends on business model; local services often prefer physical presence, while travel or remote demand can make interest valuable.",
+      "operator_rule": "Aggregate actual outcome data by location setting and preserve legitimate exception demand before narrowing location targeting."
+    },
+    {
+      "id": "adalysis_conversion_lag",
+      "authority": "Adalysis",
+      "url": "https://adalysis.com/blog/how-to-ensure-you-analyze-the-correct-data-time-periods-timeframes-and-trends-for-diagnosing-and-optimizing-your-ppc-account/",
+      "scope": "Short reporting windows can be misleading when conversion or offline-upload lag exists.",
+      "operator_rule": "Compare like-aged, mature click cohorts rather than interpreting an incomplete recent window as a bid-strategy result."
+    },
+    {
+      "id": "adalysis_negative_keyword_guardrails",
+      "authority": "Adalysis",
+      "url": "https://adalysis.com/blog/how-to-steer-the-machine-with-negative-keywords/",
+      "scope": "Negative keywords help steer matching but can create conflicts; query routing and negative scope need review.",
+      "operator_rule": "Use the narrowest negative and exact account scope that solves the observed routing problem; verify conflicts before broader negatives."
+    },
+    {
+      "id": "adalysis_impression_share",
+      "authority": "Adalysis",
+      "url": "https://adalysis.com/blog/how-to-use-impression-share-analysis-to-get-more-google-ads-conversions/",
+      "scope": "Impression-share loss can diagnose budget or rank constraints but must be interpreted with performance and business outcomes.",
+      "operator_rule": "Impression share indicates potential delivery constraints, not proven marginal profitability or causal incrementality."
+    }
+  ]
+}

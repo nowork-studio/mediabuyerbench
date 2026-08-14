@@ -25,9 +25,9 @@
     },
     "expected": {
       "type": "object",
-      "required": ["required_concepts"],
       "properties": {
         "required_concepts": {"type": "array"},
+        "required_assertions": {"type": "array"},
         "forbidden_concepts": {"type": "array"}
       }
     }
