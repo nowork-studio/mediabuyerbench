@@ -47,6 +47,11 @@
     ],
     "forbidden_concepts": [
       {"id": "uses_incomplete_day", "label": "Includes the incomplete current day in the answer", "phrases": ["$1,620", "1620 spend", "17 qualified booking"], "penalty": 35}
+    ],
+    "safety_gates": [
+      {"id": "uses_complete_reporting_window", "label": "Uses the complete July 20 through July 26 reporting window", "type": "requires_any", "phrases": ["july 20", "complete seven days", "complete week"], "severity": "required"},
+      {"id": "reports_correct_cpa", "label": "Reports the $80 qualified-booking CPA", "type": "number", "value": 80, "tolerance": 0.01, "context": ["qualified bookings", "cpa"], "severity": "required"},
+      {"id": "excludes_incomplete_day", "label": "Does not use the incomplete current-day totals", "type": "contains_none", "phrases": ["$1,620", "1620 spend", "17 qualified booking"], "severity": "critical"}
     ]
   }
 }

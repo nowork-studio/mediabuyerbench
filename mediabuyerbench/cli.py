@@ -14,6 +14,7 @@ from mediabuyerbench.expert_referee import (
     score_expert_review,
 )
 from mediabuyerbench.judge import aggregate_judgments, build_judge_prompt, calibration_report
+from mediabuyerbench.reporting import summarize_panel_results
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -47,7 +48,10 @@ def cmd_score(args: argparse.Namespace) -> int:
         print(json.dumps(score, indent=2))
     else:
         print(summarize_score(score))
-    return 0 if score["overall_score"] >= args.min_score else 1
+    passed = score["overall_score"] >= args.min_score
+    if getattr(args, "require_safety_pass", False):
+        passed = passed and score["decision_safety"]["passed"] is True
+    return 0 if passed else 1
 
 
 def cmd_judge_prompt(args: argparse.Namespace) -> int:
@@ -66,6 +70,12 @@ def cmd_aggregate_judgments(args: argparse.Namespace) -> int:
 def cmd_calibrate_judge(args: argparse.Namespace) -> int:
     calibration = json.loads(Path(args.input).read_text(encoding="utf-8"))
     print(json.dumps(calibration_report(calibration), indent=2))
+    return 0
+
+
+def cmd_summarize_panel(args: argparse.Namespace) -> int:
+    payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    print(json.dumps(summarize_panel_results(payload), indent=2))
     return 0
 
 
@@ -136,6 +146,11 @@ def build_parser() -> argparse.ArgumentParser:
     score_parser.add_argument("--judge-output", help="Blind-judge JSON matching rubrics/google_search_v2.json")
     score_parser.add_argument("--json", action="store_true")
     score_parser.add_argument("--min-score", type=float, default=0.0)
+    score_parser.add_argument(
+        "--require-safety-pass",
+        action="store_true",
+        help="Fail unless every configured decision-safety gate passes",
+    )
     score_parser.set_defaults(func=cmd_score)
 
     judge_parser = sub.add_parser("judge-prompt", help="Render a blind Google Search judge prompt")
@@ -154,6 +169,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     calibration_parser.add_argument("--input", required=True)
     calibration_parser.set_defaults(func=cmd_calibrate_judge)
+
+    report_parser = sub.add_parser(
+        "summarize-panel",
+        help="Report safe-completion and serious-error rates with 95 percent confidence intervals",
+    )
+    report_parser.add_argument("--input", required=True)
+    report_parser.set_defaults(func=cmd_summarize_panel)
 
     reference_parser = sub.add_parser(
         "expert-reference-prompt", help="Render the source-grounded expert referee reference prompt"

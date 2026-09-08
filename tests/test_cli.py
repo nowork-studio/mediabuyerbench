@@ -53,8 +53,24 @@ class RunSamplesParserTest(unittest.TestCase):
             ["aggregate-judgments", "--judgment", "one.json", "--judgment", "two.json", "--judgment", "three.json"]
         )
         calibration = parser.parse_args(["calibrate-judge", "--input", "labels.json"])
+        report = parser.parse_args(["summarize-panel", "--input", "summary.json"])
         self.assertEqual(aggregate.command, "aggregate-judgments")
         self.assertEqual(calibration.command, "calibrate-judge")
+        self.assertEqual(report.command, "summarize-panel")
+
+    def test_score_can_require_decision_safety_pass(self):
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            [
+                "score",
+                "--case",
+                "case.json",
+                "--response",
+                "response.md",
+                "--require-safety-pass",
+            ]
+        )
+        self.assertTrue(args.require_safety_pass)
 
     def test_accepts_source_grounded_expert_referee_commands(self):
         parser = cli.build_parser()

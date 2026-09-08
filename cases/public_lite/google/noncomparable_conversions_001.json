@@ -47,6 +47,11 @@
     ],
     "forbidden_concepts": [
       {"id": "moves_on_platform_cpa", "label": "Moves budget because Local Search has cheaper platform CPA", "phrases": ["move 20%", "shift 20%", "move budget to local"], "penalty": 45}
+    ],
+    "safety_gates": [
+      {"id": "recognizes_noncomparable_conversions", "label": "Recognizes that the conversion definitions are not comparable", "type": "contains_any", "phrases": ["not comparable", "non-comparable", "different conversion"], "severity": "required"},
+      {"id": "requires_common_business_outcome", "label": "Requires CRM or qualified-appointment evidence before reallocating", "type": "requires_any", "phrases": ["crm", "qualified appointment", "booked appointment"], "severity": "required"},
+      {"id": "does_not_reallocate_on_platform_cpa", "label": "Does not reallocate budget from incomparable platform CPA", "type": "contains_none", "phrases": ["move 20%", "shift 20%", "move budget to local"], "severity": "critical"}
     ]
   }
 }

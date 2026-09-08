@@ -1,6 +1,8 @@
 # MediaBuyerBench
 
-Open benchmark for evaluating AI systems as **senior paid media buyers** across ad platforms.
+Open benchmark for evaluating the **source-grounded decision safety** of AI systems working on paid-media tasks.
+
+The current no-expert track does not claim to identify the best real-world media buyer. It measures whether a model follows a closed case packet, calculates correctly, respects prerequisites, chooses a safe scope, and avoids unsupported actions under a recorded model-and-harness configuration.
 
 This first iteration is intentionally small: static case packets, deterministic scoring, and provider/skill scorecards. The public-lite split starts with five Google Ads analyst cases before expanding to cross-channel or interactive platform work.
 
@@ -21,7 +23,11 @@ MediaBuyerBench scores whether a model can make commercially sound paid-media de
 - Static benchmark cases in JSON
 - Public lite split covering retrieval, calculation, diagnosis, recommendation, and safe refusal
 - Deterministic assertion scorer for required scope, values, and safety concepts
-- Blind LLM-judge rubric for decision quality, pending calibration to the paid-media reviewer
+- Explicit required and critical decision-safety gates
+- Blind cross-family judge panel with one OpenAI, Anthropic, and Google model
+- Per-judge opaque candidate labels, so filenames and model names never enter judge prompts
+- Confidence-interval reporting for safe-completion and serious-error rates
+- Optional reviewer calibration for claims that extend beyond source-grounded decision safety
 - Provider and skill-level score output
 - Local, ignored reviewer-only Google Search drafts; never committed or exposed to a model as tools
 - No live ad account access for a model under test
@@ -61,6 +67,15 @@ mediabuyerbench score \
   --response examples/responses/google_cpa_spike_diagnosis_001.md
 ```
 
+Require every configured decision-safety gate to pass:
+
+```bash
+mediabuyerbench score \
+  --case cases/public_lite/google/cpa_spike_diagnosis_001.json \
+  --response examples/responses/google_cpa_spike_diagnosis_001.md \
+  --require-safety-pass
+```
+
 Run all sample responses:
 
 ```bash
@@ -83,6 +98,7 @@ Each case includes:
 - compact synthetic data tables
 - required concepts and deterministic assertions the model should satisfy
 - forbidden concepts/recommendations
+- required and critical decision-safety gates
 - skill weights for score breakdown
 
 See `schemas/case.schema.json` and `cases/public_lite/*`.
@@ -94,15 +110,28 @@ This v0 scorer is deliberately simple and inspectable.
 - Required concepts award points when the response mentions at least one configured phrase.
 - Required assertions check either a required phrase or a reported number within a configured tolerance.
 - Forbidden concepts subtract points and are surfaced as hard warnings.
+- Decision-safety gates produce a separate pass/fail result. A failed critical gate cannot be offset by polished prose or a high judge score.
 - Provider and skill scores are derived from the matched concepts.
 
 This is not the final evaluation quality ceiling. It is the public skeleton. Next iterations should add:
 
-- LLM judge rubrics for seniority/quality
 - multi-turn tool simulation
 - sandbox state mutation and approval-gating
 - richer platform case packs
-- leaderboard artifacts and multiple-seed reporting
+- at least 20 source-closed decision cases before emphasizing model comparisons
+
+## No-expert decision-safety suite
+
+`suites/google_search_decision_safety_v1.json` is the benchmark's current no-expert contract. Its claim is deliberately narrow: **source-grounded decision safety under the recorded harness**, not general media-buying competence.
+
+Each case defines objective gates for facts, calculations, prerequisites, action scope, and clearly unsupported actions. Run every model five times per case with identical prompts, tools, limits, and retry policy. If two providers require different runtimes, identify the compared systems as `model + runtime`.
+
+The two headline metrics are:
+
+- **Tasks Completed Safely**: responses that pass both deterministic safety gates and the panel methodology gate, divided by all responses
+- **Responses With Serious Errors**: responses with a majority-voted critical error divided by all responses
+
+Use those exact phrases as chart titles. Keep median judge score, cost, latency, and run-to-run spread secondary.
 
 ## Blind review layer
 
@@ -129,9 +158,39 @@ mediabuyerbench score \
 
 The resulting hybrid score is provisional: calibrate the judge against at least 20 independently reviewer-scored responses before treating it as a release or leaderboard score. A critical error caps the judge score at 49. The judge also reports `methodology_pass`: no critical errors and at least 3/4 on every method gate. Use methodology-pass rate, not the hybrid average, as the primary expert-split metric. Do not tune the judge after seeing a single model’s response; log each reviewer disagreement as a calibration example and apply the revised rubric prospectively.
 
-### Calibrated judge panels
+### Blind cross-family judge panels
 
-Never rank models from one judge sample. Generate at least three blind judgments per candidate, then aggregate them with a dimension-level median and a majority vote for critical errors:
+Never rank models from one judge sample. `scripts/run_arbiter_panel.py` defaults to one OpenAI, one Anthropic, and one Google judge. It replaces source model IDs with opaque labels and changes the label mapping for every case and judge before aggregating dimensions by median and critical errors by majority vote.
+
+The panel runner requires `<candidate-dir>/manifest.json`. The manifest is intentionally small: `suite_id` must match `--suite`, `harness` must satisfy that suite's recorded harness requirements, and each `runs` entry must provide a unique `run_id`, `model_id`, `runtime`, and relative `response_file`. Each response file contains one `CASE <case_id>` section for every case in the suite. The runner requires exactly `candidate_protocol.runs_per_model_per_case` entries for every `model_id + runtime` cohort; repeated trials are grouped together in `case_panels` and source IDs are shown to judges only as opaque `candidate-*` labels.
+
+Example shape (repeat the run entry exactly five times for the current suite):
+
+```json
+{
+  "suite_id": "google_search_decision_safety_v1",
+  "harness": {
+    "tools": "none",
+    "external_research": "disallowed",
+    "same_prompt_and_limits": true,
+    "prompt_sha256": "<64-character lowercase SHA-256 of the exact shared candidate prompt set>",
+    "limits": {"max_output_tokens": 4000},
+    "retry_policy": "one retry on transport failure only"
+  },
+  "runs": [
+    {
+      "model_id": "gpt-5.6-terra",
+      "runtime": "codex",
+      "run_id": "gpt-terra-codex-01",
+      "response_file": "gpt-terra-codex-01.md"
+    }
+  ]
+}
+```
+
+Raw judge responses are reused only when the adjacent `.sha256` sidecar matches the complete rendered prompt, opaque-label mapping, and judge configuration. A changed response, prompt, mapping, or judge configuration causes a fresh judgment.
+
+For pre-generated judgment files, aggregate an odd panel directly:
 
 ```bash
 mediabuyerbench aggregate-judgments \
@@ -142,15 +201,25 @@ mediabuyerbench aggregate-judgments \
 
 The aggregate exposes the individual score range, every dimension vote, and the critical-error vote count. A single harsh or generous judge cannot decide the result. Each judge must also cite the response excerpt, packet facts, and applicable operator-arbiter rule IDs supporting every dimension score.
 
-To measure whether that panel is aligned with the paid-media reviewer, prepare a JSON file with one `human_judgment` and an odd `judge_judgments` panel for each example, then run:
+Turn an arbiter-panel `summary.json` into neutral rate reporting with 95 percent Wilson confidence intervals:
+
+```bash
+mediabuyerbench summarize-panel \
+  --input .runs/arbiter_panel_YYYYMMDDTHHMMSSZ/summary.json \
+  > decision-safety-report.json
+```
+
+The summary records the verified suite, shared harness, cohort run IDs, case IDs, and expected results per case. `summarize-panel` refuses summaries whose cohorts are incomplete, have unequal case coverage, or do not carry the verified protocol metadata.
+
+If a qualified reviewer later becomes available, measure whether the panel aligns with that reviewer by preparing one `human_judgment` and an odd `judge_judgments` panel for each example, then run:
 
 ```bash
 mediabuyerbench calibrate-judge --input reviewer-labels.json
 ```
 
-The report includes per-dimension absolute error, exact/within-one agreement, critical-error false negatives and false positives, and methodology-pass agreement. It is intentionally marked `insufficient_human_labels` until it has at least 20 reviewer-labeled examples. Do not publish a leaderboard until the held-out reviewer labels show stable agreement.
+The report includes per-dimension absolute error, exact/within-one agreement, critical-error false negatives and false positives, and methodology-pass agreement. It is intentionally marked `insufficient_human_labels` until it has at least 20 reviewer-labeled examples. Do not publish claims about real-world media-buyer competence until held-out reviewer labels show stable agreement.
 
-An AI judge adds scalable review, not truth. The paid-media reviewer remains the authority for (1) the correct action, (2) the facts that gate it, and (3) critical-error labels. Keep per-case human scores so judge agreement, disagreement, and score inflation are measurable.
+An AI panel adds scalable consistency checks, not truth. Without qualified reviewers, keep claims confined to the packet's objectively encoded facts and safety rules. Cross-family agreement can increase confidence that a result is not one model's grading preference, but cannot establish that the shared judgment is correct.
 
 ## Source-grounded evaluation and private certification
 
