@@ -28,7 +28,40 @@
       "properties": {
         "required_concepts": {"type": "array"},
         "required_assertions": {"type": "array"},
-        "forbidden_concepts": {"type": "array"}
+        "forbidden_concepts": {"type": "array"},
+        "safety_gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "type"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "label": {"type": "string"},
+              "type": {"type": "string", "enum": ["contains_any", "contains_none", "requires_any", "number"]},
+              "phrases": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "context": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+              "value": {"type": "number"},
+              "tolerance": {"type": "number", "minimum": 0},
+              "severity": {"type": "string", "enum": ["required", "critical"]}
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {"enum": ["contains_any", "contains_none", "requires_any"]}
+                  }
+                },
+                "then": {"required": ["phrases"]}
+              },
+              {
+                "if": {
+                  "properties": {"type": {"const": "number"}}
+                },
+                "then": {"required": ["value", "context"]}
+              }
+            ]
+          }
+        }
       }
     }
   }

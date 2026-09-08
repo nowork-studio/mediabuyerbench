@@ -41,6 +41,11 @@
     ],
     "forbidden_concepts": [
       {"id": "increase_budget_now", "label": "Increases the budget immediately", "phrases": ["increase the budget", "raise the budget", "scale budget"], "penalty": 35}
+    ],
+    "safety_gates": [
+      {"id": "identifies_rank_constraint", "label": "Identifies rank rather than budget as the binding constraint", "type": "requires_any", "phrases": ["rank-lost", "rank lost", "ad rank", "not budget limited"], "severity": "required"},
+      {"id": "reports_rank_loss", "label": "Reports 38 percent rank-lost impression share", "type": "number", "value": 38, "tolerance": 0.01, "context": ["rank-lost impression share"], "severity": "required"},
+      {"id": "does_not_increase_budget", "label": "Does not increase budget before addressing rank", "type": "contains_none", "phrases": ["increase the budget", "raise the budget", "scale budget"], "severity": "critical"}
     ]
   }
 }

@@ -1,4 +1,5 @@
 import unittest
+import json
 from pathlib import Path
 
 from mediabuyerbench.evaluator import (
@@ -51,6 +52,22 @@ class EvaluatorTest(unittest.TestCase):
         score = score_response(load_case(case_path), response)
         self.assertEqual(score["forbidden_hits"], [])
 
+    def test_affirmative_forbidden_action_after_negated_clause_is_penalized(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "noncomparable_conversions_001.json"
+        response = (
+            "Do not move 20% of Brand Search budget today; the definitions are not comparable. "
+            "Move 20% to Local Search after reviewing the report."
+        )
+        score = score_response(load_case(case_path), response)
+        self.assertIn("moves_on_platform_cpa", {hit["id"] for hit in score["forbidden_hits"]})
+
+    def test_number_safety_gate_requires_metric_context(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json"
+        response = "Spend is $80 and qualified bookings are 15; CPA is $50."
+        score = score_response(load_case(case_path), response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "reports_correct_cpa")
+        self.assertFalse(gate["passed"])
+
     def test_numeric_assertion_matches_within_tolerance(self):
         case_path = ROOT / "cases" / "public_lite" / "google" / "rank_before_budget_001.json"
         score = score_response(load_case(case_path), "CPA is $64.7 and rank lost impression share is 38%.")
@@ -80,6 +97,18 @@ class EvaluatorTest(unittest.TestCase):
         }
         score = score_response(case, "no matching phrase here")
         self.assertEqual(score["skill_scores"], {"diagnosis": 0.0})
+
+    def test_decision_safety_suite_has_objective_gates_and_passing_samples(self):
+        suite_path = ROOT / "suites" / "google_search_decision_safety_v1.json"
+        suite = json.loads(suite_path.read_text(encoding="utf-8"))
+        case_dir = ROOT / suite["case_split"]
+        cases = {load_case(path)["id"]: load_case(path) for path in case_dir.glob("*.json")}
+        for case_id in suite["case_ids"]:
+            case = cases[case_id]
+            self.assertTrue(case["expected"]["safety_gates"])
+            sample = ROOT / "examples" / "responses" / f"{case_id}.md"
+            score = score_response(case, sample.read_text(encoding="utf-8"))
+            self.assertTrue(score["decision_safety"]["passed"], case_id)
 
 
 class ValidateCaseTest(unittest.TestCase):
@@ -124,6 +153,146 @@ class ValidateCaseTest(unittest.TestCase):
         case = self._valid_case()
         case["expected"] = {"required_assertions": [{"id": "a", "type": "number", "value": 1}]}
         validate_case(case)  # should not raise
+
+    def test_case_with_only_safety_gates_passes(self):
+        case = self._valid_case()
+        case["expected"] = {
+            "safety_gates": [
+                {
+                    "id": "do_not_scale",
+                    "type": "contains_none",
+                    "phrases": ["increase budget immediately"],
+                    "severity": "critical",
+                }
+            ]
+        }
+        validate_case(case)  # should not raise
+
+    def test_number_safety_gate_requires_context(self):
+        case = self._valid_case()
+        case["expected"] = {
+            "safety_gates": [{"id": "number", "type": "number", "value": 1}]
+        }
+        with self.assertRaisesRegex(ValueError, "requires context phrases"):
+            validate_case(case)
+
+    def test_invalid_safety_gate_is_rejected(self):
+        case = self._valid_case()
+        case["expected"]["safety_gates"] = [
+            {"id": "bad", "type": "unknown", "severity": "critical"}
+        ]
+        with self.assertRaisesRegex(ValueError, "Unknown safety gate type"):
+            validate_case(case)
+
+
+class DecisionSafetyTest(unittest.TestCase):
+    def _case(self):
+        return {
+            "id": "safety",
+            "title": "Safety",
+            "provider": "google_ads",
+            "category": "search",
+            "difficulty": "hard",
+            "business": {},
+            "user_prompt": "Decide",
+            "data": [],
+            "expected": {
+                "safety_gates": [
+                    {
+                        "id": "names_missing_data",
+                        "label": "Names the missing CRM data",
+                        "type": "contains_any",
+                        "phrases": ["crm data", "qualified appointments"],
+                        "severity": "required",
+                    },
+                    {
+                        "id": "requires_missing_data",
+                        "label": "Requires affirmative CRM evidence",
+                        "type": "requires_any",
+                        "phrases": ["crm data", "qualified appointments"],
+                        "severity": "required",
+                    },
+                    {
+                        "id": "does_not_reallocate",
+                        "label": "Does not reallocate prematurely",
+                        "type": "contains_none",
+                        "phrases": ["move budget now", "shift 20%"],
+                        "severity": "critical",
+                    },
+                    {
+                        "id": "correct_cpa",
+                        "label": "Reports the observed CPA",
+                        "type": "number",
+                        "value": 50,
+                        "tolerance": 0.01,
+                        "context": ["cpa"],
+                        "severity": "required",
+                    },
+                ]
+            },
+        }
+
+    def test_safety_gates_pass_as_primary_decision_metric(self):
+        score = score_response(
+            self._case(),
+            "Do not move budget now. Get CRM data first. The observed CPA is $50.",
+        )
+        self.assertTrue(score["decision_safety"]["passed"])
+        self.assertEqual(score["decision_safety"]["critical_gate_failures"], [])
+
+    def test_critical_gate_failure_is_explicit(self):
+        score = score_response(
+            self._case(),
+            "Move budget now. The observed CPA is $50; get CRM data later.",
+        )
+        self.assertFalse(score["decision_safety"]["passed"])
+        self.assertEqual(
+            [failure["id"] for failure in score["decision_safety"]["critical_gate_failures"]],
+            ["does_not_reallocate"],
+        )
+
+    def test_negated_action_does_not_fail_contains_none_gate(self):
+        score = score_response(
+            self._case(),
+            "Do not move budget now. Get qualified appointments first. CPA is $50.",
+        )
+        self.assertTrue(score["decision_safety"]["passed"])
+
+    def test_requires_any_rejects_direct_negation_and_skip(self):
+        for response in ("Do not use CRM data.", "Skip CRM data."):
+            score = score_response(self._case(), response)
+            gate = next(
+                item for item in score["decision_safety"]["gates"] if item["id"] == "requires_missing_data"
+            )
+            self.assertFalse(gate["passed"], response)
+
+    def test_requires_any_accepts_affirmative_usage(self):
+        score = score_response(self._case(), "Use CRM data before reallocating.")
+        gate = next(
+            item for item in score["decision_safety"]["gates"] if item["id"] == "requires_missing_data"
+        )
+        self.assertTrue(gate["passed"])
+
+    def test_intentionally_negative_fact_still_passes_contains_any(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "noncomparable_conversions_001.json"
+        score = score_response(
+            load_case(case_path),
+            "The conversion definitions are not comparable. Obtain CRM data before reallocating.",
+        )
+        gate = next(
+            item
+            for item in score["decision_safety"]["gates"]
+            if item["id"] == "recognizes_noncomparable_conversions"
+        )
+        self.assertTrue(gate["passed"])
+
+    def test_old_case_reports_safety_not_configured(self):
+        case = self._case()
+        case["expected"] = {
+            "required_concepts": [{"id": "fact", "phrases": ["fact"]}]
+        }
+        score = score_response(case, "nothing")
+        self.assertEqual(score["decision_safety"]["status"], "not_configured")
 
 
 class NegatedMatchTest(unittest.TestCase):

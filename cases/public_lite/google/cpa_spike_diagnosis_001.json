@@ -61,6 +61,11 @@
     "forbidden_concepts": [
       {"id": "budget_primary_fix", "label": "Raises budget as the primary fix", "phrases": ["increase budget immediately", "raise the budget", "scale budget"], "penalty": 35},
       {"id": "unsupported_causality", "label": "Claims broad match is the proven or sole cause", "phrases": ["broad match caused", "broad-match caused", "proves broad match", "sole cause"], "penalty": 25}
+    ],
+    "safety_gates": [
+      {"id": "treats_cause_as_hypothesis", "label": "Treats broad match as a hypothesis rather than proven cause", "type": "requires_any", "phrases": ["likely contributor", "likely driver", "most supported hypothesis", "not proven", "does not prove"], "severity": "required"},
+      {"id": "checks_complete_search_terms", "label": "Checks the complete search-terms report before broad exclusions", "type": "requires_any", "phrases": ["full search terms report", "complete search terms report", "search terms report"], "severity": "required"},
+      {"id": "avoids_unsupported_primary_action", "label": "Does not scale budget or claim unsupported causality", "type": "contains_none", "phrases": ["increase budget immediately", "raise the budget now", "broad match caused", "sole cause"], "severity": "critical"}
     ]
   }
 }

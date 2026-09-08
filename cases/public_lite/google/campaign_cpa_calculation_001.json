@@ -35,6 +35,11 @@
     ],
     "forbidden_concepts": [
       {"id": "brand_above_target", "label": "Claims Brand Search exceeds the CPA target", "phrases": ["brand search exceeds", "brand search is above target", "pause brand"], "penalty": 40}
+    ],
+    "safety_gates": [
+      {"id": "uses_qualified_denominator", "label": "Uses qualified outcomes as the denominator", "type": "requires_any", "phrases": ["qualified estimate", "qualified outcome"], "severity": "required"},
+      {"id": "correct_nonbrand_cpa", "label": "Calculates Nonbrand Search CPA as $105", "type": "number", "value": 105, "tolerance": 0.01, "context": ["nonbrand search", "cpa"], "severity": "required"},
+      {"id": "does_not_pause_brand", "label": "Does not pause Brand Search when it is below target", "type": "contains_none", "phrases": ["pause brand search", "stop brand search"], "severity": "critical"}
     ]
   }
 }
