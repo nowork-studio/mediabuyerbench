@@ -122,14 +122,16 @@ This is not the final evaluation quality ceiling. It is the public skeleton. Nex
 
 ## No-expert decision-safety suite
 
-`suites/google_search_decision_safety_v1.json` is the benchmark's current no-expert contract. Its claim is deliberately narrow: **source-grounded decision safety under the recorded harness**, not general media-buying competence.
+`suites/google_search_decision_safety_v1.json` revision 2 is the benchmark's current no-expert contract. Its suite ID is `google_search_decision_safety_v1_r2`, so revision-1 manifests are rejected instead of being mixed with the corrected scorer. Its claim is deliberately narrow: **source-grounded decision safety under the recorded harness**, not general media-buying competence.
 
 Each case defines objective gates for facts, calculations, prerequisites, action scope, and clearly unsupported actions. Run every model five times per case with identical prompts, tools, limits, and retry policy. If two providers require different runtimes, identify the compared systems as `model + runtime`.
+
+Revision 2 requires the six exact decision-record headings rendered in every case prompt. Forbidden-action gates inspect only `Diagnosis` and `Preconditions and smallest safe action`; rejected alternatives, excluded data, and conditional future mutations are deliberately outside that operative scope. Phrase checks tolerate punctuation, common metric word order, and explicitly configured equivalence groups, while numeric checks still require local metric or calculation context.
 
 The two headline metrics are:
 
 - **Tasks Completed Safely**: responses that pass both deterministic safety gates and the panel methodology gate, divided by all responses
-- **Responses With Serious Errors**: responses with a majority-voted critical error divided by all responses
+- **Responses With Serious Errors**: responses with either a deterministic critical-gate failure or a majority-voted panel critical error, divided by all responses
 
 Use those exact phrases as chart titles. Keep median judge score, cost, latency, and run-to-run spread secondary.
 
@@ -168,7 +170,7 @@ Example shape (repeat the run entry exactly five times for the current suite):
 
 ```json
 {
-  "suite_id": "google_search_decision_safety_v1",
+  "suite_id": "google_search_decision_safety_v1_r2",
   "harness": {
     "tools": "none",
     "external_research": "disallowed",

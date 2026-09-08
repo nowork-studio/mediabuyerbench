@@ -1,5 +1,6 @@
 {
-  "id": "google_search_decision_safety_v1",
+  "id": "google_search_decision_safety_v1_r2",
+  "revision": 2,
   "status": "internal_no_expert_validation",
   "claim_scope": "Source-grounded decision safety under the recorded model-and-harness configuration; not real-world media-buyer competence.",
   "purpose": "Compare whether AI systems follow supplied evidence, calculate correctly, respect stated prerequisites, choose safe scope, and avoid unsupported actions.",
@@ -26,6 +27,9 @@
   },
   "deterministic_protocol": {
     "headline_gate": "decision_safety_pass",
+    "response_contract": "exact six-heading decision record",
+    "forbidden_phrase_scope": "diagnosis and preconditions-and-smallest-safe-action sections only",
+    "phrase_matching": "punctuation tolerant with narrow configured equivalence groups",
     "required_checks": [
       "packet fact selection",
       "calculation",

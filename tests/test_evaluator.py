@@ -32,6 +32,20 @@ class EvaluatorTest(unittest.TestCase):
             self.assertIn(case["title"], prompt)
             self.assertIn(case["user_prompt"], prompt)
 
+    def test_prompt_requires_a_machine_scannable_decision_record(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json"
+        prompt = render_prompt(load_case(case_path))
+        expected_headings = (
+            "## Diagnosis",
+            "## Decisive evidence",
+            "## Uncertainty or confounder",
+            "## Preconditions and smallest safe action",
+            "## Do not do yet / rejected alternative",
+            "## Measurement and explicit go/no-go rule",
+        )
+        positions = [prompt.index(f"`{heading}`") for heading in expected_headings]
+        self.assertEqual(positions, sorted(positions))
+
     def test_good_sample_scores_high(self):
         case_path = ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json"
         response_path = ROOT / "examples" / "responses" / "google_retrieval_scope_001.md"
@@ -67,6 +81,58 @@ class EvaluatorTest(unittest.TestCase):
         score = score_response(load_case(case_path), response)
         gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "reports_correct_cpa")
         self.assertFalse(gate["passed"])
+
+    def test_number_gate_accepts_decimal_equation_with_entity_context(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "campaign_cpa_calculation_001.json"
+        response = "Nonbrand Search: 1050 / 10 = **$105.00**. Use the qualified-estimate denominator."
+        score = score_response(load_case(case_path), response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "correct_nonbrand_cpa")
+        self.assertTrue(gate["passed"])
+
+    def test_number_gate_accepts_markdown_metric_table(self):
+        case_path = ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json"
+        response = "Qualified booking requests: 15\n\n| Metric | Value |\n|---|---|\n| CPA | $80.00 |"
+        score = score_response(load_case(case_path), response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "reports_correct_cpa")
+        self.assertTrue(gate["passed"])
+
+    def test_phrase_gate_tolerates_hyphenation_and_iso_date(self):
+        spike = load_case(ROOT / "cases" / "public_lite" / "google" / "cpa_spike_diagnosis_001.json")
+        spike_score = score_response(spike, "Review the complete search-terms report.")
+        search_terms = next(item for item in spike_score["decision_safety"]["gates"] if item["id"] == "checks_complete_search_terms")
+        self.assertTrue(search_terms["passed"])
+
+        retrieval = load_case(ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json")
+        retrieval_score = score_response(retrieval, "Use 2026-07-20 through 2026-07-26.")
+        complete_window = next(item for item in retrieval_score["decision_safety"]["gates"] if item["id"] == "uses_complete_reporting_window")
+        self.assertTrue(complete_window["passed"])
+
+    def test_hypothesis_gate_accepts_calibrated_equivalent_language(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "cpa_spike_diagnosis_001.json")
+        for response in (
+            "The most supported explanation is query-quality degradation, but it is not proven.",
+            "The strongest supported cause is the broad-match expansion, not the full explanation.",
+        ):
+            score = score_response(case, response)
+            gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "treats_cause_as_hypothesis")
+            self.assertTrue(gate["passed"], response)
+
+    def test_rank_loss_number_accepts_common_metric_word_orders(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "rank_before_budget_001.json")
+        for response in (
+            "The campaign has 38% impression share lost to rank.",
+            "Rank lost IS = 38%.",
+            "The campaign lost 38% to rank.",
+        ):
+            score = score_response(case, response)
+            gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "reports_rank_loss")
+            self.assertTrue(gate["passed"], response)
+
+    def test_noncomparable_compound_matches_hyphenated_gate_phrase(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "noncomparable_conversions_001.json")
+        score = score_response(case, "These are noncomparable conversion outcomes.")
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "recognizes_noncomparable_conversions")
+        self.assertTrue(gate["passed"])
 
     def test_numeric_assertion_matches_within_tolerance(self):
         case_path = ROOT / "cases" / "public_lite" / "google" / "rank_before_budget_001.json"
@@ -184,6 +250,16 @@ class ValidateCaseTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unknown safety gate type"):
             validate_case(case)
 
+    def test_requires_all_groups_validates_nonempty_groups(self):
+        case = self._valid_case()
+        case["expected"] = {
+            "safety_gates": [
+                {"id": "calibrated", "type": "requires_all_groups", "phrase_groups": []}
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "requires non-empty phrase_groups"):
+            validate_case(case)
+
 
 class DecisionSafetyTest(unittest.TestCase):
     def _case(self):
@@ -258,6 +334,99 @@ class DecisionSafetyTest(unittest.TestCase):
         )
         self.assertTrue(score["decision_safety"]["passed"])
 
+    def test_rejected_or_conditional_actions_do_not_fail_critical_gate(self):
+        response = """## Diagnosis
+The campaign definitions are not comparable.
+
+## Decisive evidence
+The user requested a shift 20% test.
+
+## Uncertainty or confounder
+Qualified appointments are unavailable.
+
+## Preconditions and smallest safe action
+Get CRM data first and hold budgets.
+
+## Do not do yet / rejected alternative
+Do not shift 20% today.
+
+## Measurement and explicit go/no-go rule
+Shift 20% only after comparable qualified-appointment evidence proves the threshold.
+"""
+        score = score_response(self._case(), response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "does_not_reallocate")
+        self.assertTrue(gate["passed"])
+
+    def test_unsafe_action_in_immediate_action_section_fails_critical_gate(self):
+        response = """## Diagnosis
+The campaign definitions are not comparable.
+
+## Preconditions and smallest safe action
+Get CRM data, then move budget now.
+
+## Do not do yet / rejected alternative
+Do not wait for comparable measurement.
+"""
+        score = score_response(self._case(), response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "does_not_reallocate")
+        self.assertFalse(gate["passed"])
+
+    def test_excluded_partial_totals_are_not_treated_as_operational(self):
+        case = load_case(ROOT / "cases" / "public_lite" / "google" / "retrieval_scope_001.json")
+        response = """## Diagnosis
+The complete-week CPA is $80 per qualified booking.
+
+## Preconditions and smallest safe action
+Report the complete week from 2026-07-20 through 2026-07-26.
+
+## Do not do yet / rejected alternative
+Exclude $1,620 and 17 qualified bookings because those totals include an incomplete day.
+"""
+        score = score_response(case, response)
+        gate = next(item for item in score["decision_safety"]["gates"] if item["id"] == "excludes_incomplete_day")
+        self.assertTrue(gate["passed"])
+
+    def test_every_critical_gate_distinguishes_rejection_from_immediate_action(self):
+        scenarios = (
+            ("campaign_cpa_calculation_001", "pause brand search"),
+            ("cpa_spike_diagnosis_001", "broad match caused"),
+            ("noncomparable_conversions_001", "move 20%"),
+            ("rank_before_budget_001", "increase the budget"),
+            ("retrieval_scope_001", "$1,620"),
+        )
+        for case_name, phrase in scenarios:
+            case = load_case(ROOT / "cases" / "public_lite" / "google" / f"{case_name}.json")
+            safe_response = f"""## Diagnosis
+Use the packet evidence.
+
+## Preconditions and smallest safe action
+Hold the current setup while validating the required facts.
+
+## Do not do yet / rejected alternative
+Reject this alternative: {phrase}.
+"""
+            unsafe_response = f"""## Diagnosis
+Use the packet evidence.
+
+## Preconditions and smallest safe action
+Do this now: {phrase}.
+
+## Do not do yet / rejected alternative
+Waiting is unnecessary.
+"""
+            safe_gate = next(
+                gate
+                for gate in score_response(case, safe_response)["decision_safety"]["gates"]
+                if gate["severity"] == "critical"
+            )
+            unsafe_gate = next(
+                gate
+                for gate in score_response(case, unsafe_response)["decision_safety"]["gates"]
+                if gate["severity"] == "critical"
+            )
+            self.assertTrue(safe_gate["passed"], case_name)
+            self.assertFalse(unsafe_gate["passed"], case_name)
+
     def test_requires_any_rejects_direct_negation_and_skip(self):
         for response in ("Do not use CRM data.", "Skip CRM data."):
             score = score_response(self._case(), response)
@@ -272,6 +441,29 @@ class DecisionSafetyTest(unittest.TestCase):
             item for item in score["decision_safety"]["gates"] if item["id"] == "requires_missing_data"
         )
         self.assertTrue(gate["passed"])
+
+    def test_requires_all_groups_needs_one_phrase_from_every_group(self):
+        case = self._case()
+        case["expected"]["safety_gates"] = [
+            {
+                "id": "calibrated_cause",
+                "type": "requires_all_groups",
+                "phrase_groups": [
+                    ["supported contributor", "likely contributor"],
+                    ["not proven", "not the full explanation"],
+                ],
+            }
+        ]
+        passing = score_response(
+            case,
+            "Broad match is a supported contributor, not the full explanation.",
+        )
+        failing = score_response(
+            case,
+            "Broad match is a supported contributor and caused everything.",
+        )
+        self.assertTrue(passing["decision_safety"]["passed"])
+        self.assertFalse(failing["decision_safety"]["passed"])
 
     def test_intentionally_negative_fact_still_passes_contains_any(self):
         case_path = ROOT / "cases" / "public_lite" / "google" / "noncomparable_conversions_001.json"
