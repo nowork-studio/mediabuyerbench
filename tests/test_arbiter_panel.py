@@ -451,3 +451,30 @@ class ArbiterPanelTest(unittest.TestCase):
             combined["decision_safety"]["critical_gate_failures"][0]["id"],
             "no_scale",
         )
+
+    def test_safe_completion_requires_case_contract_critical_pass(self):
+        case = {
+            "id": "case",
+            "expected": {
+                "safety_gates": [
+                    {
+                        "id": "mentions_scope",
+                        "type": "contains_any",
+                        "phrases": ["one campaign"],
+                        "severity": "required",
+                    }
+                ]
+            },
+        }
+        panel = {
+            "case_id": "case",
+            "methodology_pass": True,
+            "critical_errors": [],
+            "case_specific_quality": {
+                "status": "scored",
+                "score": 40.0,
+                "critical_failures": [{"criterion_id": "unsafe_decision"}],
+            },
+        }
+        combined = combine_panel_and_safety(case, "Use one campaign.", panel)
+        self.assertFalse(combined["safe_completion"])

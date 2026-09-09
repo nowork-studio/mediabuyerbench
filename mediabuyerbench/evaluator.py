@@ -7,6 +7,16 @@ from pathlib import Path
 from typing import Any
 
 
+DECISION_RECORD_SECTIONS = (
+    "Diagnosis",
+    "Decisive evidence",
+    "Uncertainty or confounder",
+    "Preconditions and smallest safe action",
+    "Do not do yet / rejected alternative",
+    "Measurement and explicit go/no-go rule",
+)
+
+
 @dataclass(frozen=True)
 class ConceptResult:
     concept_id: str
@@ -60,7 +70,13 @@ def validate_case(case: dict[str, Any], path: Path | None = None) -> None:
         raise ValueError(
             f"Case {case['id']} must include at least one required concept or assertion or safety gate"
         )
-    known_gate_types = {"contains_any", "contains_none", "requires_any", "number"}
+    known_gate_types = {
+        "contains_any",
+        "contains_none",
+        "requires_any",
+        "requires_all_groups",
+        "number",
+    }
     known_severities = {"required", "critical"}
     seen_gate_ids: set[str] = set()
     for gate in safety_gates:
@@ -78,6 +94,19 @@ def validate_case(case: dict[str, Any], path: Path | None = None) -> None:
             raise ValueError(f"Unknown safety gate severity: {severity}")
         if gate_type in {"contains_any", "contains_none", "requires_any"} and not gate.get("phrases"):
             raise ValueError(f"Safety gate {gate_id} requires phrases")
+        if gate_type == "requires_all_groups":
+            groups = gate.get("phrase_groups")
+            if (
+                not isinstance(groups, list)
+                or not groups
+                or not all(
+                    isinstance(group, list)
+                    and group
+                    and all(isinstance(phrase, str) and phrase for phrase in group)
+                    for group in groups
+                )
+            ):
+                raise ValueError(f"Safety gate {gate_id} requires non-empty phrase_groups")
         if gate_type == "number":
             if "value" not in gate:
                 raise ValueError(f"Safety gate {gate_id} requires value")
@@ -114,7 +143,10 @@ def render_prompt(case: dict[str, Any]) -> str:
         "",
         "## Response requirements",
         "- Lead with the top diagnosis.",
-        "- Include a concise, auditable decision record: decisive facts/calculations; uncertainty or confounder; action and preconditions; rejected alternative and why; measurement and go/no-go rule.",
+        "- Use these exact Markdown headings, once each and in this order:",
+        *(f"  - `## {section}`" for section in DECISION_RECORD_SECTIONS),
+        "- Put only actions that are safe to take now under `## Preconditions and smallest safe action`.",
+        "- Put rejected actions and conditional future mutations only under their named headings.",
         "- Explain the evidence and denominator for any rates.",
         "- Recommend the smallest safe next actions at the exact scope.",
         "- State what not to do yet if relevant.",
@@ -123,10 +155,49 @@ def render_prompt(case: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+_MONTH_NUMBERS = {
+    "january": "01", "february": "02", "march": "03", "april": "04",
+    "may": "05", "june": "06", "july": "07", "august": "08",
+    "september": "09", "october": "10", "november": "11", "december": "12",
+}
+_TOKEN_SYNONYMS = {
+    "most": ("most", "strongest"),
+    "hypothesis": ("hypothesis", "diagnosis", "explanation", "cause"),
+}
+
+
+def _phrase_pattern(phrase: str) -> re.Pattern[str]:
+    """Compile a punctuation-tolerant phrase pattern with narrow safe aliases."""
+    tokens = re.findall(r"[a-z0-9]+", phrase.lower())
+    if not tokens:
+        return re.compile(r"(?!x)x")
+    token_patterns = []
+    for index, token in enumerate(tokens):
+        alternatives = _TOKEN_SYNONYMS.get(token, (token,))
+        token_pattern = "(?:" + "|".join(re.escape(item) for item in alternatives) + ")"
+        if index == len(tokens) - 1 and token.isalpha() and not token.endswith("s"):
+            token_pattern += "s?"
+        token_patterns.append(token_pattern)
+    separators = [r"[^a-z0-9]+"] * (len(token_patterns) - 1)
+    if tokens[0] == "non" and separators:
+        separators[0] = r"[^a-z0-9]*"
+    ordinary_parts = [token_patterns[0]]
+    for separator, token_pattern in zip(separators, token_patterns[1:]):
+        ordinary_parts.extend((separator, token_pattern))
+    ordinary = "".join(ordinary_parts)
+    alternatives = [ordinary]
+    if len(tokens) == 2 and tokens[0] in _MONTH_NUMBERS and tokens[1].isdigit():
+        alternatives.append(rf"(?:\d{{4}}-)?{_MONTH_NUMBERS[tokens[0]]}-{int(tokens[1]):02d}")
+    return re.compile(r"(?<![a-z0-9])(?:" + "|".join(alternatives) + r")(?![a-z0-9])", re.IGNORECASE)
+
+
+def _phrase_matches(text: str, phrase: str) -> list[re.Match[str]]:
+    return list(_phrase_pattern(phrase).finditer(text))
+
+
 def _find_phrase(text: str, phrases: list[str]) -> str | None:
-    lowered = text.lower()
     for phrase in phrases:
-        if phrase.lower() in lowered:
+        if _phrase_matches(text, phrase):
             return phrase
     return None
 
@@ -191,9 +262,8 @@ def _is_negated_at(lowered: str, match_at: int) -> bool:
 def _is_negated_match(text: str, phrase: str) -> bool:
     """Return True when the first matching phrase is negated in its clause."""
     lowered = text.lower()
-    phrase_lower = phrase.lower()
-    start = lowered.find(phrase_lower)
-    return start >= 0 and _is_negated_at(lowered, start)
+    matches = _phrase_matches(lowered, phrase)
+    return bool(matches) and _is_negated_at(lowered, matches[0].start())
 
 
 def _numbers_in(text: str) -> list[float]:
@@ -227,6 +297,14 @@ def _bounded_units(text: str) -> list[str]:
             and text[index + 1].isdigit()
         ):
             continue
+        if (
+            character == "."
+            and index > 0
+            and index + 1 < len(text)
+            and text[index - 1].isdigit()
+            and text[index + 1].isdigit()
+        ):
+            continue
         unit = text[start:index].strip()
         if unit:
             units.append(unit)
@@ -237,19 +315,116 @@ def _bounded_units(text: str) -> list[str]:
     return units
 
 
+_OPERATIVE_LABEL_PREFIXES = (
+    "diagnosis",
+    "action",
+    "recommended action",
+    "smallest safe action",
+    "precondition",
+)
+_NONOPERATIVE_LABEL_PREFIXES = (
+    "decisive",
+    "evidence",
+    "uncertainty",
+    "material uncertainty",
+    "rejected",
+    "do not",
+    "what not",
+    "not yet",
+    "measurement",
+    "go/no-go",
+    "go-no-go",
+    "excluded",
+    "scope used",
+    "reported figures",
+)
+
+
+def _line_label(line: str) -> tuple[str, str] | None:
+    stripped = line.strip()
+    heading = re.match(r"^#{1,6}\s+(.+?)\s*#*$", stripped)
+    if heading:
+        return heading.group(1).strip().rstrip(":").lower(), ""
+    bold = re.match(r"^(?:[-*]\s+)?\*\*(.+?)\*\*\s*:?[ \t]*(.*)$", stripped)
+    if bold:
+        return bold.group(1).strip().rstrip(":").lower(), bold.group(2)
+    bullet = re.match(r"^[-*]\s+([^:]{1,90}):[ \t]*(.*)$", stripped)
+    if bullet:
+        return bullet.group(1).strip().lower(), bullet.group(2)
+    return None
+
+
+def _operative_text(text: str) -> str:
+    """Return diagnosis and immediate-action blocks from an auditable decision record."""
+    selected: list[str] = []
+    mode: bool | None = None
+    found_operative_label = False
+    for line in text.splitlines():
+        labeled = _line_label(line)
+        content = line
+        if labeled:
+            label, remainder = labeled
+            if label.startswith(_OPERATIVE_LABEL_PREFIXES):
+                mode = True
+                found_operative_label = True
+                content = remainder
+            elif label.startswith(_NONOPERATIVE_LABEL_PREFIXES):
+                mode = False
+                content = ""
+            elif line.lstrip().startswith("#"):
+                mode = False
+                content = ""
+        if mode and content.strip():
+            selected.append(content)
+    return "\n".join(selected) if found_operative_label else text
+
+
 def _find_unnegated_phrase(text: str, phrases: list[str]) -> str | None:
     """Find a phrase used as an action rather than a negated warning."""
     lowered = text.lower()
     for phrase in phrases:
-        phrase_lower = phrase.lower()
-        start = 0
-        while True:
-            match_at = lowered.find(phrase_lower, start)
-            if match_at < 0:
-                break
+        for match in _phrase_matches(lowered, phrase):
+            match_at = match.start()
             if not _is_negated_at(lowered, match_at):
                 return phrase
-            start = match_at + len(phrase_lower)
+    return None
+
+
+def _context_present(text: str, context: str) -> bool:
+    if _phrase_matches(text, context):
+        return True
+    if context.lower().endswith("s"):
+        if _phrase_matches(text, context[:-1]):
+            return True
+    context_tokens = re.findall(r"[a-z0-9]+", context.lower())
+    if len(context_tokens) > 1 and context_tokens[-1] in {"search", "campaign"}:
+        if _phrase_matches(text, " ".join(context_tokens[:-1])):
+            return True
+    if context.lower() == "rank-lost impression share":
+        return bool(
+            re.search(
+                r"(?:rank(?:[\W_]+lost)?[\W_]+(?:impression[\W_]+share|is)|"
+                r"(?:impression[\W_]+share[\W_]+)?lost[\W_]+to[\W_]+rank|"
+                r"lost[\W_]+\d+(?:\.\d+)?%?[\W_]+to[\W_]+rank)",
+                text,
+                re.IGNORECASE,
+            )
+        )
+    return False
+
+
+def _number_gate_match(response: str, target: float, tolerance: float, contexts: list[str]) -> float | None:
+    for unit in _bounded_units(response):
+        if all(_context_present(unit, context) for context in contexts):
+            for value in _numbers_in(unit):
+                if abs(value - target) <= tolerance:
+                    return value
+    for line in response.splitlines():
+        values = [value for value in _numbers_in(line) if abs(value - target) <= tolerance]
+        if not values or not any(_context_present(line, context) for context in contexts):
+            continue
+        if "|" in line or any(operator in line for operator in ("/", "÷", "=")):
+            return values[0]
     return None
 
 
@@ -292,24 +467,21 @@ def _score_safety_gate(gate: dict[str, Any], response: str) -> SafetyGateResult:
     elif gate_type == "requires_any":
         matched_value = _find_unnegated_phrase(response, gate.get("phrases", []))
         passed = matched_value is not None
+    elif gate_type == "requires_all_groups":
+        matches = [
+            _find_unnegated_phrase(response, group)
+            for group in gate.get("phrase_groups", [])
+        ]
+        passed = bool(matches) and all(match is not None for match in matches)
+        matched_value = "; ".join(str(match) for match in matches) if passed else None
     elif gate_type == "contains_none":
-        matched_value = _find_unnegated_phrase(response, gate.get("phrases", []))
+        matched_value = _find_unnegated_phrase(_operative_text(response), gate.get("phrases", []))
         passed = matched_value is None
     elif gate_type == "number":
         target = float(gate["value"])
         tolerance = float(gate.get("tolerance", 0.0))
         contexts = [str(context).lower() for context in gate.get("context", [])]
-        matched_value = next(
-            (
-                value
-                for unit in _bounded_units(response)
-                if contexts
-                and all(context in unit.lower() for context in contexts)
-                for value in _numbers_in(unit)
-                if abs(value - target) <= tolerance
-            ),
-            None,
-        )
+        matched_value = _number_gate_match(response, target, tolerance, contexts)
         passed = matched_value is not None
     else:  # validate_case rejects this; keep direct callers safe too.
         raise ValueError(f"Unknown safety gate type: {gate_type}")

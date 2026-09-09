@@ -21,6 +21,14 @@ DECISION_RECORD_LABELS = (
     "measurement and explicit go/no-go rule",
 )
 
+QUALITY_CONTRACT_RATINGS = ("met", "not_met", "contradicted")
+QUALITY_CONTRACT_PILLARS = (
+    "evidence_math",
+    "inference",
+    "action_safety",
+    "validation",
+)
+
 
 def _dimension_ids(rubric: dict[str, Any]) -> tuple[str, ...]:
     return tuple(str(dimension["id"]) for dimension in rubric["dimensions"])
@@ -54,6 +62,250 @@ def render_arbiter(rubric: dict[str, Any]) -> str:
     if provenance:
         lines.extend(["", f"Provenance: {provenance}."])
     return "\n".join(lines)
+
+
+def quality_contract_criteria(case: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return and validate an optional hidden, case-specific quality contract."""
+    contract = case.get("expected", {}).get("quality_contract")
+    if contract is None:
+        return []
+    if not isinstance(contract, dict):
+        raise ValueError("Case expected.quality_contract must be an object")
+    criteria = contract.get("criteria")
+    if not isinstance(criteria, list) or not criteria:
+        raise ValueError("Case quality_contract.criteria must be a non-empty array")
+    seen: set[str] = set()
+    has_pillars = any("pillar" in criterion for criterion in criteria if isinstance(criterion, dict))
+    for criterion in criteria:
+        if not isinstance(criterion, dict):
+            raise ValueError("Every quality criterion must be an object")
+        criterion_id = criterion.get("id")
+        if not isinstance(criterion_id, str) or not criterion_id:
+            raise ValueError("Every quality criterion needs a non-empty id")
+        if criterion_id in seen:
+            raise ValueError(f"Case repeats quality criterion id {criterion_id}")
+        seen.add(criterion_id)
+        if not isinstance(criterion.get("description"), str) or not criterion["description"]:
+            raise ValueError(f"Quality criterion {criterion_id} needs a description")
+        weight = criterion.get("weight")
+        if isinstance(weight, bool) or not isinstance(weight, (int, float)) or weight <= 0:
+            raise ValueError(f"Quality criterion {criterion_id} needs a positive weight")
+        if criterion.get("severity") not in {"required", "critical"}:
+            raise ValueError(
+                f"Quality criterion {criterion_id} severity must be required or critical"
+            )
+        if has_pillars and criterion.get("pillar") not in QUALITY_CONTRACT_PILLARS:
+            raise ValueError(
+                f"Quality criterion {criterion_id} pillar must be one of "
+                f"{', '.join(QUALITY_CONTRACT_PILLARS)}"
+            )
+        if (
+            has_pillars
+            and criterion.get("severity") == "critical"
+            and criterion.get("pillar") != "action_safety"
+        ):
+            raise ValueError(
+                f"Critical quality criterion {criterion_id} must be in action_safety"
+            )
+        alternatives = criterion.get("acceptable_alternatives", [])
+        if not isinstance(alternatives, list) or not all(
+            isinstance(item, str) and item for item in alternatives
+        ):
+            raise ValueError(
+                f"Quality criterion {criterion_id} acceptable_alternatives must be strings"
+            )
+    if has_pillars:
+        present = {criterion["pillar"] for criterion in criteria}
+        if present != set(QUALITY_CONTRACT_PILLARS):
+            missing = sorted(set(QUALITY_CONTRACT_PILLARS) - present)
+            raise ValueError(
+                "Pillar-scored quality contract must cover every pillar; missing: "
+                + ", ".join(missing)
+            )
+    return criteria
+
+
+def render_quality_contract(case: dict[str, Any]) -> str:
+    """Render the hidden audit contract for judges, never for candidates."""
+    criteria = quality_contract_criteria(case)
+    if not criteria:
+        return ""
+    lines = [
+        "## Case-specific quality contract (judge only)",
+        "The candidate did not see this contract. It is an audit checklist, not a model answer. "
+        "Mark a criterion met only when the response explicitly satisfies every detail in its "
+        "description or one listed acceptable alternative. Do not infer missing work. Use "
+        "not_met for omissions or incomplete work and contradicted when the response states or "
+        "recommends the opposite. Keep each criterion evidence string under 12 words.",
+    ]
+    for criterion in criteria:
+        alternatives = criterion.get("acceptable_alternatives", [])
+        suffix = (
+            " Acceptable alternatives: " + "; ".join(alternatives)
+            if alternatives
+            else ""
+        )
+        pillar = f", pillar {criterion['pillar']}" if criterion.get("pillar") else ""
+        lines.append(
+            f"- {criterion['id']} [{criterion['severity']}, weight {criterion['weight']}"
+            f"{pillar}]: "
+            f"{criterion['description']}.{suffix}"
+        )
+    return "\n".join(lines)
+
+
+def validate_quality_contract_assessment(
+    judgment: dict[str, Any], case: dict[str, Any]
+) -> None:
+    """Require one evidence-backed assessment for every declared criterion."""
+    criteria = quality_contract_criteria(case)
+    if not criteria:
+        return
+    assessments = judgment.get("criterion_assessments")
+    if not isinstance(assessments, list):
+        raise ValueError("Judgment criterion_assessments must be an array")
+    expected_ids = {criterion["id"] for criterion in criteria}
+    returned_ids: set[str] = set()
+    for assessment in assessments:
+        if not isinstance(assessment, dict):
+            raise ValueError("Every criterion assessment must be an object")
+        criterion_id = assessment.get("criterion_id")
+        if criterion_id in returned_ids:
+            raise ValueError(f"Judgment repeats criterion assessment {criterion_id}")
+        returned_ids.add(criterion_id)
+        if criterion_id not in expected_ids:
+            raise ValueError(f"Judgment returned unknown criterion {criterion_id}")
+        if assessment.get("rating") not in QUALITY_CONTRACT_RATINGS:
+            raise ValueError(
+                f"Criterion {criterion_id} rating must be one of "
+                f"{', '.join(QUALITY_CONTRACT_RATINGS)}"
+            )
+        if not isinstance(assessment.get("evidence"), str):
+            raise ValueError(f"Criterion {criterion_id} needs evidence text")
+    if returned_ids != expected_ids:
+        missing = sorted(expected_ids - returned_ids)
+        raise ValueError(f"Judgment missing criterion assessments: {', '.join(missing)}")
+
+
+def score_quality_contract_assessment(
+    judgment: dict[str, Any], case: dict[str, Any]
+) -> dict[str, Any]:
+    """Score explicit case requirements independently of generic prose methodology."""
+    criteria = quality_contract_criteria(case)
+    if not criteria:
+        return {"status": "not_configured", "score": None}
+    validate_quality_contract_assessment(judgment, case)
+    assessments = {
+        item["criterion_id"]: item for item in judgment["criterion_assessments"]
+    }
+    total_weight = sum(float(criterion["weight"]) for criterion in criteria)
+    earned_weight = sum(
+        float(criterion["weight"])
+        for criterion in criteria
+        if assessments[criterion["id"]]["rating"] == "met"
+    )
+    raw_score = 100.0 * earned_weight / total_weight
+    critical_failures = [
+        {
+            "criterion_id": criterion["id"],
+            "rating": assessments[criterion["id"]]["rating"],
+            "evidence": assessments[criterion["id"]]["evidence"],
+        }
+        for criterion in criteria
+        if criterion["severity"] == "critical"
+        and assessments[criterion["id"]]["rating"] != "met"
+    ]
+    pillar_scores: dict[str, float] = {}
+    if all(criterion.get("pillar") for criterion in criteria):
+        for pillar in QUALITY_CONTRACT_PILLARS:
+            pillar_criteria = [
+                criterion for criterion in criteria if criterion["pillar"] == pillar
+            ]
+            pillar_weight = sum(float(criterion["weight"]) for criterion in pillar_criteria)
+            pillar_earned = sum(
+                float(criterion["weight"])
+                for criterion in pillar_criteria
+                if assessments[criterion["id"]]["rating"] == "met"
+            )
+            pillar_scores[pillar] = 100.0 * pillar_earned / pillar_weight
+        weakest_pillar_score = min(pillar_scores.values())
+        # Integrated decision quality needs both broad correctness and no weak
+        # essential pillar. A candidate cannot offset an unsafe action with math,
+        # or missing validation with polished diagnosis.
+        uncapped_score = raw_score * weakest_pillar_score / 100.0
+        scoring_method = "atomic_coverage_times_weakest_pillar"
+    else:
+        weakest_pillar_score = None
+        uncapped_score = raw_score
+        scoring_method = "atomic_coverage"
+    score = min(uncapped_score, 49.0) if critical_failures else uncapped_score
+    return {
+        "status": "scored",
+        "score": round(score, 1),
+        "raw_score": round(raw_score, 1),
+        "atomic_coverage_score": round(raw_score, 1),
+        "pillar_scores": {
+            pillar: round(value, 1) for pillar, value in pillar_scores.items()
+        },
+        "weakest_pillar_score": (
+            round(weakest_pillar_score, 1)
+            if weakest_pillar_score is not None
+            else None
+        ),
+        "scoring_method": scoring_method,
+        "critical_failures": critical_failures,
+        "assessments": list(judgment["criterion_assessments"]),
+    }
+
+
+def aggregate_quality_contract_assessments(
+    judgments: list[dict[str, Any]], case: dict[str, Any]
+) -> dict[str, Any]:
+    """Aggregate atomic contract ratings by majority before scoring."""
+    criteria = quality_contract_criteria(case)
+    if not criteria:
+        return {"status": "not_configured", "score": None}
+    if len(judgments) < 3 or len(judgments) % 2 == 0:
+        raise ValueError("Quality-contract aggregate requires an odd panel of at least three")
+    for judgment in judgments:
+        validate_quality_contract_assessment(judgment, case)
+    majority = len(judgments) // 2 + 1
+    aggregated: list[dict[str, str]] = []
+    rating_votes: dict[str, dict[str, int]] = {}
+    for criterion in criteria:
+        criterion_id = criterion["id"]
+        items = [
+            next(
+                item
+                for item in judgment["criterion_assessments"]
+                if item["criterion_id"] == criterion_id
+            )
+            for judgment in judgments
+        ]
+        counts = Counter(item["rating"] for item in items)
+        rating_votes[criterion_id] = {
+            rating: counts.get(rating, 0) for rating in QUALITY_CONTRACT_RATINGS
+        }
+        if counts["contradicted"] >= majority:
+            rating = "contradicted"
+        elif counts["met"] >= majority:
+            rating = "met"
+        else:
+            rating = "not_met"
+        aggregated.append(
+            {
+                "criterion_id": criterion_id,
+                "rating": rating,
+                "evidence": "Panel majority; inspect individual judgments for evidence.",
+            }
+        )
+    score = score_quality_contract_assessment(
+        {"criterion_assessments": aggregated}, case
+    )
+    score["panel_size"] = len(judgments)
+    score["majority"] = majority
+    score["rating_votes"] = rating_votes
+    return score
 
 
 def decision_record_check(response: str) -> dict[str, Any]:
@@ -284,7 +536,17 @@ def build_judge_prompt(case: dict[str, Any], response: str, rubric: dict[str, An
         f"- {dimension['id']} ({int(dimension['weight'] * 100)}%): {dimension['description']}"
         for dimension in rubric["dimensions"]
     )
-    schema = json.dumps(rubric["output_schema"], indent=2)
+    output_schema = dict(rubric["output_schema"])
+    contract = render_quality_contract(case)
+    if contract:
+        output_schema["criterion_assessments"] = [
+            {
+                "criterion_id": "exact id from the case-specific quality contract",
+                "rating": "met | not_met | contradicted",
+                "evidence": "short exact response excerpt or concise statement that it is absent",
+            }
+        ]
+    schema = json.dumps(output_schema, indent=2)
     format_check = decision_record_check(response)
     return "\n".join(
         [
@@ -305,6 +567,8 @@ def build_judge_prompt(case: dict[str, Any], response: str, rubric: dict[str, An
             "## Case packet",
             render_prompt(case).rstrip(),
             "",
+            contract,
+            "" if contract else "",
             "## Candidate response",
             response.strip(),
             "",

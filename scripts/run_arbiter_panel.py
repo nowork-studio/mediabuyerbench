@@ -24,15 +24,19 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from mediabuyerbench.evaluator import evaluate_decision_safety, load_case, render_prompt
+from mediabuyerbench.evaluator import evaluate_decision_safety, render_prompt
 from mediabuyerbench.judge import (
     aggregate_judgments,
+    aggregate_quality_contract_assessments,
     decision_record_check,
     load_rubric,
     render_arbiter,
+    render_quality_contract,
     validate_judgment,
+    validate_quality_contract_assessment,
 )
 from mediabuyerbench.reporting import is_serious_error
+from mediabuyerbench.suites import load_declared_cases, validate_case_sources
 
 
 DEFAULT_SUITE = ROOT / "suites" / "google_search_decision_safety_v1.json"
@@ -61,14 +65,13 @@ def load_suite(path: str | Path = DEFAULT_SUITE) -> dict[str, Any]:
         suite = json.load(f)
     if not isinstance(suite, dict):
         raise ValueError("Suite must be a JSON object")
-    required = ("id", "case_split", "case_ids", "candidate_protocol")
+    required = ("id", "case_ids", "candidate_protocol")
     missing = [field for field in required if field not in suite]
     if missing:
         raise ValueError(f"Suite missing fields: {', '.join(missing)}")
     if not isinstance(suite["id"], str) or not suite["id"]:
         raise ValueError("Suite id must be a non-empty string")
-    if not isinstance(suite["case_split"], str) or not suite["case_split"]:
-        raise ValueError("Suite case_split must be a non-empty string")
+    validate_case_sources(suite)
     case_ids = suite["case_ids"]
     if not isinstance(case_ids, list) or not case_ids or not all(
         isinstance(case_id, str) and case_id for case_id in case_ids
@@ -417,8 +420,16 @@ def combine_panel_and_safety(
     combined = dict(panel_score)
     decision_safety = evaluate_decision_safety(case, response)
     combined["decision_safety"] = decision_safety
+    contract = panel_score.get("case_specific_quality", {})
+    contract_safe = (
+        not contract.get("critical_failures")
+        if contract.get("status") == "scored"
+        else True
+    )
     combined["safe_completion"] = (
-        decision_safety["passed"] is True and bool(panel_score.get("methodology_pass"))
+        decision_safety["passed"] is True
+        and bool(panel_score.get("methodology_pass"))
+        and contract_safe
     )
     return combined
 
@@ -427,6 +438,15 @@ def build_panel_prompt(
     case: dict[str, Any], candidates: dict[str, str], rubric: dict[str, Any]
 ) -> str:
     judgment_schema = dict(rubric["output_schema"])
+    contract = render_quality_contract(case)
+    if contract:
+        judgment_schema["criterion_assessments"] = [
+            {
+                "criterion_id": "exact id from the case-specific quality contract",
+                "rating": "met | not_met | contradicted",
+                "evidence": "short exact response excerpt or concise statement that it is absent",
+            }
+        ]
     judgment_schema["candidate_id"] = "string, must exactly equal one provided anonymous candidate label"
     schema = {"judgments": [judgment_schema]}
     candidate_sections = []
@@ -465,6 +485,8 @@ def build_panel_prompt(
             "## Case packet",
             render_prompt(case).rstrip(),
             "",
+            contract,
+            "" if contract else "",
             *candidate_sections,
             "Return JSON only with this shape:",
             json.dumps(schema, indent=2),
@@ -612,17 +634,10 @@ def main(argv: list[str] | None = None) -> int:
     if len(families) != 3:
         raise SystemExit("Use exactly three distinct model families for the panel")
 
-    case_dir = args.case_dir or Path(suite["case_split"])
-    if not case_dir.is_absolute():
-        case_dir = ROOT / case_dir
-    case_paths = sorted(case_dir.glob("*.json"))
-    cases_by_id = {case["id"]: case for case in (load_case(path) for path in case_paths)}
-    if set(cases_by_id) != set(suite["case_ids"]):
-        raise SystemExit(
-            "Suite case files do not exactly match its declared case_ids: "
-            f"declared={suite['case_ids']}, found={sorted(cases_by_id)}"
-        )
-    cases = [cases_by_id[case_id] for case_id in suite["case_ids"]]
+    try:
+        cases = load_declared_cases(suite, ROOT, args.case_dir)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise SystemExit(str(exc)) from exc
     rubric = load_rubric()
     output_dir = args.output_dir or (
         ROOT / ".runs" / f"arbiter_panel_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}"
@@ -678,6 +693,7 @@ def main(argv: list[str] | None = None) -> int:
                     anonymous_id = judgment.pop("candidate_id")
                     source_id = label_map[anonymous_id]
                     validate_judgment(judgment, rubric)
+                    validate_quality_contract_assessment(judgment, case)
                     grouped_judgments[source_id].append(judgment)
                     raw_judgments.setdefault(case["id"], {}).setdefault(source_id, {})[
                         judge_id
@@ -688,14 +704,51 @@ def main(argv: list[str] | None = None) -> int:
                 raise
         for run_id, judgments in grouped_judgments.items():
             panel_score = aggregate_judgments(judgments, rubric)
+            panel_score["case_specific_quality"] = (
+                aggregate_quality_contract_assessments(judgments, case)
+            )
             result = combine_panel_and_safety(case, responses[run_id], panel_score)
             result.update({"run_id": run_id, **run_metadata[run_id]})
             per_candidate[run_metadata[run_id]["cohort_key"]].append(result)
 
     candidate_summaries = {}
     for candidate_id, scores in per_candidate.items():
+        contract_scores = [
+            score["case_specific_quality"]["score"]
+            for score in scores
+            if score.get("case_specific_quality", {}).get("score") is not None
+        ]
+        atomic_scores = [
+            score["case_specific_quality"]["atomic_coverage_score"]
+            for score in scores
+            if score.get("case_specific_quality", {}).get("atomic_coverage_score")
+            is not None
+        ]
+        weakest_pillar_scores = [
+            score["case_specific_quality"]["weakest_pillar_score"]
+            for score in scores
+            if score.get("case_specific_quality", {}).get("weakest_pillar_score")
+            is not None
+        ]
         candidate_summaries[candidate_id] = {
             "average_judge_score": round(sum(score["judge_score"] for score in scores) / len(scores), 1),
+            "overall_quality_score": (
+                round(sum(contract_scores) / len(contract_scores), 1)
+                if contract_scores
+                else None
+            ),
+            "atomic_coverage_score": (
+                round(sum(atomic_scores) / len(atomic_scores), 1)
+                if atomic_scores
+                else None
+            ),
+            "average_weakest_pillar_score": (
+                round(
+                    sum(weakest_pillar_scores) / len(weakest_pillar_scores), 1
+                )
+                if weakest_pillar_scores
+                else None
+            ),
             "safe_completion_rate": round(
                 sum(bool(score["safe_completion"]) for score in scores) / len(scores), 3
             ),
@@ -720,10 +773,11 @@ def main(argv: list[str] | None = None) -> int:
         "anonymization_maps": anonymization_maps,
     }
     (output_dir / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print("\nCandidate\tSafe completion\tSerious errors\tMedian-panel average")
+    print("\nCandidate\tOverall quality\tSafe completion\tSerious errors\tMethod quality")
     for candidate_id, summary in sorted(candidate_summaries.items()):
         print(
-            f"{candidate_id}\t{summary['safe_completion_rate']:.0%}\t"
+            f"{candidate_id}\t{summary['overall_quality_score']}\t"
+            f"{summary['safe_completion_rate']:.0%}\t"
             f"{summary['serious_error_count']}\t{summary['average_judge_score']}"
         )
     print(f"\nWrote {output_dir / 'summary.json'}")

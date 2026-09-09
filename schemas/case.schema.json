@@ -29,6 +29,35 @@
         "required_concepts": {"type": "array"},
         "required_assertions": {"type": "array"},
         "forbidden_concepts": {"type": "array"},
+        "quality_contract": {
+          "type": "object",
+          "required": ["criteria"],
+          "properties": {
+            "criteria": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["id", "description", "weight", "severity"],
+                "properties": {
+                  "id": {"type": "string", "minLength": 1},
+                  "description": {"type": "string", "minLength": 1},
+                  "weight": {"type": "number", "exclusiveMinimum": 0},
+                  "severity": {"type": "string", "enum": ["required", "critical"]},
+                  "pillar": {
+                    "type": "string",
+                    "enum": ["evidence_math", "inference", "action_safety", "validation"]
+                  },
+                  "acceptable_alternatives": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            },
+            "scoring_note": {"type": "string"}
+          }
+        },
         "safety_gates": {
           "type": "array",
           "items": {

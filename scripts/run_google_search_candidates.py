@@ -21,7 +21,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from mediabuyerbench.evaluator import load_case, render_prompt
+from mediabuyerbench.evaluator import render_prompt
+from mediabuyerbench.suites import load_declared_cases, validate_case_sources
 
 
 DEFAULT_SUITE = ROOT / "suites" / "google_search_public_demo_v1.json"
@@ -44,9 +45,10 @@ not to do yet, and a measurement/go-no-go rule. Do not reveal private reasoning.
 
 def load_suite(path: Path) -> dict[str, Any]:
     suite = json.loads(path.read_text(encoding="utf-8"))
-    for field in ("id", "case_split", "case_ids"):
+    for field in ("id", "case_ids"):
         if field not in suite:
             raise ValueError(f"Suite missing {field}")
+    validate_case_sources(suite)
     return suite
 
 
@@ -110,10 +112,7 @@ def main() -> int:
     args = parser.parse_args()
 
     suite = load_suite(args.suite)
-    case_dir = ROOT / suite["case_split"]
-    cases = {case["id"]: case for case in (load_case(path) for path in case_dir.glob("*.json"))}
-    if set(cases) != set(suite["case_ids"]):
-        raise SystemExit("Suite case files do not exactly match declared case IDs")
+    cases = {case["id"]: case for case in load_declared_cases(suite, ROOT)}
     args.output_dir.mkdir(parents=True, exist_ok=True)
     metrics: list[dict[str, Any]] = []
     for case_id in suite["case_ids"]:
