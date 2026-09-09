@@ -22,7 +22,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from mediabuyerbench.evaluator import load_case
 from mediabuyerbench.expert_referee import (
     build_reference_prompt,
     build_review_prompt,
@@ -31,6 +30,7 @@ from mediabuyerbench.expert_referee import (
     validate_expert_review,
     validate_reference,
 )
+from mediabuyerbench.suites import load_declared_cases, validate_case_sources
 
 
 DEFAULT_SUITE = ROOT / "suites" / "google_search_public_demo_v1.json"
@@ -39,7 +39,7 @@ DEFAULT_SUITE = ROOT / "suites" / "google_search_public_demo_v1.json"
 def load_suite(path: Path) -> dict[str, Any]:
     """Load the frozen suite manifest and prove it matches the case files."""
     suite = json.loads(path.read_text(encoding="utf-8"))
-    required = ("id", "status", "source_pack_id", "case_split", "case_ids")
+    required = ("id", "status", "source_pack_id", "case_ids")
     missing = [field for field in required if field not in suite]
     if missing:
         raise ValueError(f"Suite missing fields: {', '.join(missing)}")
@@ -47,6 +47,7 @@ def load_suite(path: Path) -> dict[str, Any]:
         raise ValueError("Suite must declare at least one case id")
     if len(set(suite["case_ids"])) != len(suite["case_ids"]):
         raise ValueError("Suite case_ids must be unique")
+    validate_case_sources(suite)
     return suite
 
 
@@ -114,15 +115,10 @@ def main() -> int:
         raise SystemExit(
             f"Suite expects source pack {suite['source_pack_id']}, got {source_pack['id']}"
         )
-    case_dir = args.case_dir or ROOT / suite["case_split"]
-    cases_by_id = {case["id"]: case for case in (load_case(path) for path in sorted(case_dir.glob("*.json")))}
-    declared_case_ids = list(suite["case_ids"])
-    if set(cases_by_id) != set(declared_case_ids):
-        raise SystemExit(
-            "Suite case files do not exactly match its declared case_ids: "
-            f"declared={declared_case_ids}, found={sorted(cases_by_id)}"
-        )
-    cases = [cases_by_id[case_id] for case_id in declared_case_ids]
+    try:
+        cases = load_declared_cases(suite, ROOT, args.case_dir)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise SystemExit(str(exc)) from exc
     output_dir = args.output_dir or (
         ROOT / ".runs" / f"certification_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{args.candidate_id}"
     )

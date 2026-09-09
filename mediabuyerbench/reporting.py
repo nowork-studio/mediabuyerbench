@@ -205,6 +205,89 @@ def _validate_protocol(
     return case_ids, runs_per_model, cohorts
 
 
+def _case_difficulty_audit(
+    case_panels: dict[str, Any], case_ids: list[str]
+) -> dict[str, Any]:
+    """Identify cases that no longer distinguish any compared model."""
+    hardening_options = [
+        "Add conflicting but relevant evidence that must be reconciled.",
+        "Make the safe action depend on explicit measurement or policy prerequisites.",
+        "Include a plausible high-impact action that is unsafe under the supplied facts.",
+        "Require a denominator, lag, or like-aged cohort calculation.",
+        "Require a scoped test with a falsifiable go/no-go rule and rollback condition.",
+    ]
+    cases: dict[str, Any] = {}
+    ceiling_case_ids: list[str] = []
+
+    for case_id in case_ids:
+        cohort_summaries: dict[str, Any] = {}
+        all_scores_present = True
+        every_score_is_100 = True
+        every_response_is_safe = True
+
+        for cohort_id, results in sorted(case_panels.items()):
+            case_results = [result for result in results if result["case_id"] == case_id]
+            scores = [
+                float(result["judge_score"])
+                for result in case_results
+                if "judge_score" in result
+            ]
+            scores_complete = len(scores) == len(case_results)
+            all_scores_present = all_scores_present and scores_complete
+            every_score_is_100 = every_score_is_100 and scores_complete and all(
+                score == 100.0 for score in scores
+            )
+            every_response_is_safe = every_response_is_safe and all(
+                result["safe_completion"] is True for result in case_results
+            )
+            cohort_summaries[cohort_id] = {
+                "responses": len(case_results),
+                "safe_completion_rate": round(
+                    sum(result["safe_completion"] is True for result in case_results)
+                    / len(case_results),
+                    3,
+                ),
+                "minimum_judge_score": min(scores) if scores_complete else None,
+                "median_judge_score": (
+                    round(float(median(scores)), 1) if scores_complete else None
+                ),
+                "maximum_judge_score": max(scores) if scores_complete else None,
+            }
+
+        if not all_scores_present:
+            status = "insufficient_score_data"
+        elif every_score_is_100 and every_response_is_safe:
+            status = "ceiling"
+            ceiling_case_ids.append(case_id)
+        else:
+            status = "discriminating"
+        cases[case_id] = {
+            "status": status,
+            "cohorts": cohort_summaries,
+        }
+
+    return {
+        "ceiling_definition": (
+            "Every repeated response from every compared model under its recorded "
+            "runtime receives a judge score of 100 and completes safely."
+        ),
+        "ceiling_case_ids": ceiling_case_ids,
+        "recommended_action": (
+            "Replace each ceiling case with a harder successor in a new suite version, "
+            "then rerun every compared model on the full suite."
+        ),
+        "review_queue": [
+            {
+                "case_id": case_id,
+                "action": "author_harder_successor",
+                "hardening_options": hardening_options,
+            }
+            for case_id in ceiling_case_ids
+        ],
+        "cases": cases,
+    }
+
+
 def summarize_panel_results(payload: dict[str, Any]) -> dict[str, Any]:
     """Create neutral, uncertainty-aware reporting from an arbiter-panel summary."""
     case_panels = payload.get("case_panels")
@@ -230,12 +313,13 @@ def summarize_panel_results(payload: dict[str, Any]) -> dict[str, Any]:
             "median_judge_score": round(float(median(scores)), 1) if scores else None,
         }
 
-    _validate_protocol(payload, case_panels)
+    case_ids, _, _ = _validate_protocol(payload, case_panels)
 
     return {
         "claim_scope": "source-grounded decision safety under the recorded harness",
         "headline_metrics": ["tasks_completed_safely", "responses_with_serious_errors"],
         "models": models,
+        "case_difficulty_audit": _case_difficulty_audit(case_panels, case_ids),
         "limitations": [
             "Automated judge agreement is not proof of real-world media-buying competence.",
             "Compare results only when suite, harness, tools, prompts, and run counts match.",

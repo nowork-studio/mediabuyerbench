@@ -18,3 +18,12 @@ examples/responses/private_google_expert_review/
 docs/private_google_expert_review.md
 source_packs/google_search_certification_v1.json
 suites/google_search_private_certification_v1.json
+cases/private_google_ads_decision_quality/
+docs/google_ads_decision_quality_method.md
+suites/google_ads_decision_quality.json
+
+# Archived private benchmark revisions use numbered names. Keep those names out
+# of the working folders and ignore them if an archive is restored locally.
+cases/private_google_hard_v*/
+docs/google_search_hard_v*_research.md
+suites/google_search_decision_safety_hard_v*.json
