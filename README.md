@@ -124,12 +124,15 @@ This is not the final evaluation quality ceiling. It is the public skeleton. Nex
 
 The **Google Ads Decision Quality Benchmark** is the current internal benchmark. It contains 14 difficult, source-closed cases and scores the complete decision chain across evidence and math, inference, action safety, and validation.
 
-Current medium-effort results, using five attempts per model and the same prompt, limits, and blind cross-family review panel:
+Current medium-effort results use five attempts per model. Within each condition, every model received the same prompt, limits, and blind cross-family review panel:
 
-| Model | Overall quality |
-| --- | ---: |
-| GPT-5.6 Luna | 18.9 |
-| GPT-5.6 Terra | 17.7 |
+| Model | Baseline | With Ads Operator | Change |
+| --- | ---: | ---: | ---: |
+| GPT-5.6 Luna | 18.9 | Invalid | — |
+| GPT-5.6 Terra | 17.7 | 18.3 | +0.6 |
+| GPT-5.6 Sol | 21.8 | 21.3 | −0.5 |
+
+The Ads Operator condition injects the same NotFair Ads Operator guidance for every model. Luna's skill-assisted cohort was not scored because it violated the 2,500-word response contract.
 
 The stable entry points are:
 
